@@ -565,6 +565,7 @@ function iniciarSortable() {
       group: 'kanban',
       animation: 150,
       handle: '.task-card',
+       filter: '.kanban-header',
       ghostClass: 'opacity-50',
       onAdd: async (evt) => {
         const card   = evt.item;
