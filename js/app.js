@@ -527,7 +527,7 @@ async function concluirTarefa(id) {
 
 // Nova tarefa
 async function criarTarefa() {
-  const titulo     = document.getElementById('nt-titulo')?.value?.trim();
+  const titulo = document.getElementById('nova-titulo')?.value?.trim();
   const descricao  = document.getElementById('nt-descricao')?.value?.trim();
   const prazo      = document.getElementById('nt-prazo')?.value;
   const dificuldade = difAtual || 'medio';
@@ -1080,6 +1080,42 @@ function excluirAvatar() {
   if (av) av.innerHTML = getIniciais(u.nome || 'JW');
   const btnDel = document.getElementById('btn-del-avatar');
   if (btnDel) btnDel.style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+// MODAL NOVA TAREFA — funções do HTML
+// ─────────────────────────────────────────────
+function toggleCatDropdown() {
+  const list = document.getElementById('cat-list');
+  if (list) list.style.display = list.style.display === 'none' ? 'block' : 'none';
+}
+
+function selectCat(nome) {
+  const texto = document.getElementById('cat-selected-text');
+  if (texto) texto.textContent = nome;
+  const list = document.getElementById('cat-list');
+  if (list) list.style.display = 'none';
+  // Mapeia nome para id (ajuste conforme suas categorias no banco)
+  const mapa = {
+    '📘 Desenvolvimento Pessoal': 1,
+    '💼 Trabalho': 2,
+    '📚 Estudo': 3,
+    '💪 Saúde & Fitness': 4,
+    '🏠 Casa & Rotina': 5,
+    '💰 Finanças': 6,
+  };
+  categoriaAtual = mapa[nome] || 1;
+}
+
+function setDif(btn, dif) {
+  difAtual = dif;
+  document.querySelectorAll('.diff-btn').forEach(b => {
+    b.classList.remove('active-facil', 'active-medio', 'active-dificil');
+  });
+  if (btn) btn.classList.add('active-' + dif);
+  const u = usuarioAtual || {};
+  const xpPreview = document.getElementById('nova-xp-pr') || document.getElementById('nt-xp-preview');
+  if (xpPreview) xpPreview.textContent = '+' + calcularXP(dif, u.score || 60) + ' XP';
 }
 
 // ─────────────────────────────────────────────
