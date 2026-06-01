@@ -700,6 +700,15 @@ async function carregarConquistas() {
   renderizarConquistasPerfil(data);
 }
 
+function nomeArquivo(nome) {
+  return nome
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
 function renderizarConquistas(conquistas) {
   const grid = document.getElementById('conquistas-grid');
   if (!grid) return;
@@ -716,7 +725,7 @@ function renderizarConquistas(conquistas) {
 
   grid.innerHTML = conquistas.map(c => `
     <div class="conquista-card ${c.desbloqueada ? 'unlocked' : ''}">
-      <img class="conquista-img ${c.desbloqueada ? '' : 'locked'}" src="assets/${c.tipo}-${c.id}.png" alt="${c.nome}" onerror="this.style.display='none'">
+      <img class="conquista-img ${c.desbloqueada ? '' : 'locked'}" src="assets/${nomeArquivo(c.nome)}.png" alt="${c.nome}" onerror="this.style.display='none'">
       <div style="font-size:13px;font-weight:700;font-family:'Sora';">${c.nome}</div>
       <div style="font-size:11px;color:#64748b;text-align:center;">${c.descricao}</div>
       <span class="xp-tag-c ${c.desbloqueada ? 'unlocked' : 'locked'}">+${c.xp_de_resgate} XP</span>
@@ -731,7 +740,8 @@ function renderizarConquistasPerfil(conquistas) {
   const desbloqueadas = conquistas.filter(c => c.desbloqueada).slice(0, 8);
   container.innerHTML = desbloqueadas.map(c => `
     <div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:50px;text-align:center;">
-      <img src="assets/${c.tipo}-${c.id}.png" alt="${c.nome}" style="width:42px;height:42px;object-fit:contain;" onerror="this.style.display='none'">
+      src="assets/${nomeArquivo(c.nome)}.png"
+ alt="${c.nome}" style="width:42px;height:42px;object-fit:contain;" onerror="this.style.display='none'">
       <span style="font-size:9px;color:#94a3b8;line-height:1.3;">${c.nome}</span>
     </div>
   `).join('');
