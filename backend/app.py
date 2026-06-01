@@ -38,7 +38,7 @@ def login():
     cursor = conexao.cursor()
 
     cursor.execute(
-        "SELECT * FROM usuarios WHERE email = %s",
+        "SELECT id, id_nivel, nome, email, senha, score, xp_total, is_admin FROM usuarios WHERE email = %s",
         (email,)
     )
     usuario = cursor.fetchone()
@@ -62,8 +62,9 @@ def login():
             "id_nivel": usuario[1],
             "nome":     usuario[2],
             "email":    usuario[3],
-            "score":    usuario[5] if len(usuario) > 5 else 60,
-            "xp_total": usuario[6] if len(usuario) > 6 else 0,
+            "score":    usuario[5] if usuario[5] is not None else 60,
+            "xp_total": usuario[6] if usuario[6] is not None else 0,
+            "is_admin": usuario[7] if usuario[7] is not None else False,
         }
     }), 200
 
@@ -111,7 +112,10 @@ def cadastro():
         )
         conexao.commit()
 
-        cursor.execute("SELECT * FROM usuarios WHERE email = %s", (email,))
+        cursor.execute(
+            "SELECT id, id_nivel, nome, email, senha, score, xp_total, is_admin FROM usuarios WHERE email = %s",
+            (email,)
+        )
         usuario = cursor.fetchone()
 
         token = create_access_token(identity=str(usuario[0]))
@@ -123,8 +127,9 @@ def cadastro():
                 "id_nivel": usuario[1],
                 "nome":     usuario[2],
                 "email":    usuario[3],
-                "score":    usuario[5] if len(usuario) > 5 else 60,
-                "xp_total": usuario[6] if len(usuario) > 6 else 0,
+                "score":    usuario[5] if usuario[5] is not None else 60,
+                "xp_total": usuario[6] if usuario[6] is not None else 0,
+                "is_admin": usuario[7] if usuario[7] is not None else False,
             }
         }), 201
 
@@ -821,15 +826,16 @@ def listar_conquistas():
     conexao = criar_conexao()
     cursor  = conexao.cursor()
 
-    # Todas as conquistas existentes
+    # Todas as conquistas existentes (filtra pelo usuário pois a tabela é por usuário)
     cursor.execute(
         """
         SELECT id, tipo, nome, descricao_objetivo,
                valor_necessario, xp_de_resgate, arte
         FROM conquistas
-        WHERE ativa = TRUE
+        WHERE ativa = TRUE AND id_usuario = %s
         ORDER BY tipo, valor_necessario
-        """
+        """,
+        (id_usuario,)
     )
     todas = cursor.fetchall()
 
