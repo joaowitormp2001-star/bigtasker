@@ -1,28 +1,1315 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BigTasker</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    // Configurações atualizadas com a paleta exata da imagem
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'bt-fundo1':   '#060B1E', // Fundo 1
-            'bt-fundo2':   '#1A243C', // Fundo 2
-            'bt-blue':     '#3B82F6', // Tag 1
-            'bt-purple':   '#8B5CF6', // Tag 2 / Fundo 3 / Botão 1 (Nota: na imagem está escrito 8B5CF6, mas a cor exibida é roxa)
-            'bt-green':    '#22C55E', // Tag 3 / Botão 2
-            'bt-red':      '#EF4444', // Tag 4
-            'bt-texto':    '#F8FAFC', // Texto
-            'bt-texto2':   '#94A3B8', // Texto 2
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BigTasker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>tailwind.config={theme:{extend:{colors:{'bt-bg':'#0d1117','bt-surface':'#161b27','bt-card':'#1c2333','bt-border':'#2a3347','bt-purple':'#7c3aed','bt-blue':'#3b82f6','bt-green':'#22c55e','bt-red':'#ef4444','bt-yellow':'#f59e0b','bt-text':'#e2e8f0','bt-muted':'#64748b'}}}}</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;}
+h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#2a3347;border-radius:4px;}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;background:#0d1117;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.6s ease;}
+#splash.fade-out{opacity:0;pointer-events:none;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.anim-logo{animation:fadeUp 0.7s ease forwards;}
+.anim-tagline{animation:fadeUp 0.7s ease 0.35s forwards;opacity:0;}
+
+/* AUTH */
+#auth-screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px;}
+#auth-screen.active{display:flex;}
+.auth-outer{display:flex;width:100%;max-width:920px;background:#161b27;border:1px solid #2a3347;border-radius:20px;overflow:hidden;min-height:520px;}
+.auth-form-side{flex:0 0 440px;padding:44px 44px;display:flex;flex-direction:column;justify-content:center;}
+.auth-img-side{flex:1;position:relative;overflow:hidden;min-height:360px;padding:20px;}
+.auth-img-side img{width:100%;height:100%;object-fit:cover;display:block;border-radius:12px;}
+
+/* APP SHELL */
+#app{display:none;height:100vh;overflow:hidden;background:#0d1117;padding:24px;gap:16px;}
+#app.active{display:flex;}
+
+/* SIDEBAR */
+#sidebar{width:248px;min-width:248px;height:100%;background:#161b27;border:1px solid #2a3347;border-radius:16px;display:flex;flex-direction:column;padding:22px 0;flex-shrink:0;overflow:hidden;}
+.nav-item{padding:10px 22px;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600;font-size:14px;color:#64748b;transition:all 0.18s;border-left:3px solid transparent;user-select:none;}
+.nav-item:hover{color:#e2e8f0;background:rgba(124,58,237,0.07);}
+.nav-item.active{color:#fff;border-left-color:#7c3aed;background:rgba(124,58,237,0.11);}
+
+/* MAIN */
+#main-content{flex:1;overflow:hidden;height:100%;min-width:0;background:#161b27;border:1px solid #2a3347;border-radius:16px;}
+.page{display:none;height:100%;}
+.page.active{display:flex;flex-direction:column;height:100%;}
+
+/* DASHBOARD */
+#page-dashboard{flex-direction:column !important;overflow:hidden;}
+.dash-top{padding:28px 32px 0;flex-shrink:0;}
+.dash-bottom{flex:1;display:flex;overflow:hidden;min-height:0;}
+.feed-col{flex:1;overflow-y:auto;padding:20px 24px 24px 32px;}
+.tasks-col{width:420px;min-width:420px;padding:20px 24px 24px 16px;display:flex;flex-direction:column;border-left:1px solid #2a3347;overflow:hidden;}
+.tasks-inner{overflow-y:auto;flex:1;}
+.tasks-inner::-webkit-scrollbar{width:0;}
+
+/* TASK CARD */
+.task-card{background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color 0.2s,transform 0.15s;}
+.task-card:hover{border-color:#7c3aed;transform:translateY(-1px);}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:'Inter',sans-serif;white-space:nowrap;}
+.badge-facil{background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.25);}
+.badge-medio{background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);}
+.badge-dificil{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.25);}
+.badge-atrasada{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.25);}
+
+/* CATEGORY BADGE */
+.badge-cat{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:100px;font-size:11px;font-weight:700;font-family:'Sora',sans-serif;background:rgba(124,58,237,0.25);color:#c4b5fd;border:1px solid rgba(124,58,237,0.5);}
+
+/* SCORE BADGE */
+.score-badge{font-family:'Sora',sans-serif;font-weight:700;font-size:11px;padding:3px 10px;border-radius:100px;background:#22c55e;color:#000;}
+
+/* POST CARD */
+.post-card{background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;margin-bottom:20px;transition:border-color 0.2s;}
+.post-card:hover{border-color:#3a4a66;}
+
+/* KANBAN */
+.kanban-col{flex:1;background:#1c2333;border-radius:12px;padding:16px;overflow-y:auto;display:flex;flex-direction:column;}
+.kanban-header{font-family:'Sora',sans-serif;font-weight:700;font-size:11px;color:#64748b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;}
+
+/* MODAIS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:#1c2333;border:1px solid #2a3347;border-radius:20px;padding:28px;width:100%;max-width:700px;position:relative;animation:modalIn 0.22s ease;max-height:90vh;overflow-y:auto;}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+
+/* INPUTS */
+.bt-input{background:#0d1117;border:1px solid #2a3347;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-family:'Inter',sans-serif;font-size:14px;width:100%;outline:none;transition:border-color 0.2s;}
+.bt-input:focus{border-color:#7c3aed;}
+.bt-input::placeholder{color:#475569;}
+.bt-input-pill{border-radius:100px !important;}
+.bt-select{background:#7c3aed;border:none;border-radius:8px;padding:10px 14px;color:#fff;font-family:'Inter',sans-serif;font-size:14px;width:100%;outline:none;cursor:pointer;}
+
+/* BUTTONS */
+.btn-primary{background:#7c3aed;color:#fff;font-family:'Sora',sans-serif;font-weight:600;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-size:14px;transition:background 0.2s;white-space:nowrap;}
+.btn-primary:hover{background:#6d28d9;}
+.btn-green{background:#22c55e;color:#000;font-family:'Sora',sans-serif;font-weight:700;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-size:14px;transition:background 0.2s;}
+.btn-green:hover{background:#16a34a;}
+.btn-green-pill{border-radius:100px !important;}
+.btn-outline{background:transparent;border:1px solid #2a3347;color:#94a3b8;font-family:'Sora',sans-serif;font-weight:600;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;transition:all 0.2s;}
+.btn-outline:hover{border-color:#7c3aed;color:#c4b5fd;}
+
+/* XP BAR */
+.xp-bar{height:8px;background:#2a3347;border-radius:100px;overflow:hidden;}
+.xp-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#3b82f6);border-radius:100px;transition:width 0.6s ease;}
+
+/* LEVEL TAGS */
+.nivel-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 12px;border-radius:100px;font-size:12px;font-weight:700;font-family:'Sora',sans-serif;}
+.nivel-bronze{background:linear-gradient(135deg,#cd7c3f,#a0522d);color:#fff;}
+.nivel-prata{background:linear-gradient(135deg,#94a3b8,#64748b);color:#fff;}
+.nivel-ouro{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;}
+.nivel-platina{background:linear-gradient(135deg,#e0f2fe,#7dd3fc);color:#0369a1;}
+.nivel-diamante{background:linear-gradient(135deg,#a5f3fc,#0ea5e9);color:#0c4a6e;}
+.nivel-mestre{background:linear-gradient(135deg,#c4b5fd,#7c3aed);color:#fff;}
+.nivel-graomestre{background:linear-gradient(135deg,#fde68a,#f59e0b,#dc2626);color:#000;}
+.nivel-supremo{background:linear-gradient(135deg,#f8fafc,#7c3aed,#000);color:#fff;}
+
+/* CONQUISTA CARD */
+.conquista-card{width:235px;min-width:235px;background:#1c2333;border:1px solid #2a3347;border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;text-align:center;}
+.conquista-card.unlocked{border-color:rgba(124,58,237,0.45);background:rgba(124,58,237,0.08);}
+.conquista-img{width:80px;height:80px;object-fit:contain;}
+.conquista-img.locked{filter:grayscale(100%) brightness(0.35);}
+.xp-tag-c{font-family:'Sora',sans-serif;font-size:12px;font-weight:700;}
+.xp-tag-c.unlocked{color:#22c55e;}
+.xp-tag-c.locked{color:#475569;}
+.prog-bar{height:4px;background:#2a3347;border-radius:100px;overflow:hidden;width:100%;margin-top:4px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#3b82f6);border-radius:100px;}
+
+/* DIFF TOGGLE */
+.diff-toggle{display:flex;background:#0d1117;border-radius:100px;padding:3px;gap:2px;}
+.diff-btn{padding:5px 14px;border-radius:100px;font-size:13px;cursor:pointer;transition:all 0.2s;border:none;background:transparent;color:#64748b;font-family:'Inter',sans-serif;}
+.diff-btn.active-facil{background:rgba(34,197,94,0.18);color:#22c55e;}
+.diff-btn.active-medio{background:rgba(59,130,246,0.18);color:#60a5fa;}
+.diff-btn.active-dificil{background:rgba(239,68,68,0.18);color:#f87171;}
+
+/* COVER */
+.cover-area{height:190px;background:linear-gradient(135deg,#1c2333,#2a1a4e);border-radius:16px 16px 0 0;position:relative;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.cover-hover{position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;}
+.cover-area:hover .cover-hover{opacity:1;}
+
+/* PODIUM */
+.podium-block{border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;}
+
+/* NOTIF DOT */
+.notif-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;position:absolute;top:0;right:0;}
+
+/* REACT BUTTONS */
+.react-btn{display:flex;align-items:center;gap:5px;cursor:pointer;color:#F8FAFC;opacity:0.45;transition:opacity 0.18s;font-size:13px;font-family:'Inter',sans-serif;background:none;border:none;padding:4px;}
+.react-btn:hover{opacity:0.8;}
+.react-btn.active{opacity:1;color:#F8FAFC;}
+.react-btn.active svg{fill:#F8FAFC;}
+
+/* PROFILE MODAL */
+.profile-modal-cover{height:140px;border-radius:16px 16px 0 0;background:linear-gradient(135deg,#1c2333,#2a1a4e);}
+
+/* RANKING */
+.ranking-row{transition:background 0.15s;}
+.ranking-row:hover{background:rgba(124,58,237,0.06);}
+
+/* NOTIF PANEL */
+#notif-panel{position:absolute;bottom:calc(100% + 8px);right:0;width:380px;background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;z-index:600;animation:modalIn 0.2s ease;max-height:400px;overflow-y:auto;}
+.notif-item{padding:14px 16px;border-bottom:1px solid #2a3347;cursor:pointer;transition:background 0.15s;}
+.notif-item:hover{background:rgba(124,58,237,0.06);}
+.notif-item:last-child{border-bottom:none;}
+
+/* SLIDE OUT ANIMATION */
+@keyframes slideOut{from{transform:translateX(0);opacity:1;}to{transform:translateX(120%);opacity:0;}}
+.slide-out{animation:slideOut 0.4s ease forwards;}
+
+/* PAGE SCROLL */
+.page-scroll{overflow-y:auto;height:100%;padding:28px 32px;}
+
+/* PRIVATE NOTICE */
+.private-notice{background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:100px;padding:6px 16px;font-size:12px;color:#c4b5fd;text-align:center;margin-bottom:16px;}
+
+/* CATEGORY SELECT DROPDOWN */
+.cat-dropdown{position:relative;}
+.cat-selected{background:#7c3aed;border:none;border-radius:8px;padding:10px 14px;color:#fff;font-family:'Inter',sans-serif;font-size:14px;width:100%;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
+.cat-list{position:absolute;top:calc(100%+4px);left:0;right:0;background:#7c3aed;border-radius:12px;overflow:hidden;z-index:100;animation:modalIn 0.15s ease;}
+.cat-option{padding:10px 16px;cursor:pointer;font-size:13px;color:#fff;transition:background 0.15s;}
+.cat-option:hover{background:rgba(255,255,255,0.15);}
+
+/* SETTINGS FIELDS */
+.settings-field{background:#0d1117;border:1px solid #2a3347;border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;color:#e2e8f0;font-size:14px;}
+.settings-field .edit-btn{background:none;border:none;color:#7c3aed;cursor:pointer;padding:2px 6px;display:flex;align-items:center;}
+.settings-field input.sf-input{background:transparent;border:none;outline:none;color:#e2e8f0;font-size:14px;font-family:'Inter';flex:1;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="anim-logo">
+    <img src="assets/logo-bigtasker.svg" alt="BigTasker" style="height:56px;" onerror="this.outerHTML='<span style=\'font-family:Sora;font-size:36px;font-weight:800;color:#fff;\'>Big<span style=\'color:#7c3aed;\'>Tasker</span></span>'">
+  </div>
+  <p class="anim-tagline" style="margin-top:20px;color:#475569;font-size:15px;letter-spacing:0.04em;">Planeje, conclua, pontue!</p>
+</div>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-outer">
+    <div class="auth-form-side">
+      <div style="margin-bottom:32px;">
+        <img src="assets/logo-bigtasker.svg" alt="BigTasker" style="height:32px;" onerror="this.outerHTML='<span style=\'font-family:Sora;font-size:22px;font-weight:800;color:#fff;\'>Big<span style=\'color:#7c3aed;\'>Tasker</span></span>'">
+      </div>
+
+      <!-- LOGIN -->
+      <div id="form-login">
+        <input class="bt-input bt-input-pill" type="email" placeholder="E-mail" style="margin-bottom:12px;">
+        <input class="bt-input bt-input-pill" type="password" placeholder="Senha" style="margin-bottom:8px;">
+        <div style="text-align:right;margin-bottom:22px;">
+          <span style="font-size:13px;color:#F8FAFC;">Esqueceu a senha? <span style="color:#22c55e;cursor:pointer;" onclick="mostrarForm('esqueceu')">Clique aqui</span></span>
+        </div>
+        <button class="btn-green btn-green-pill" style="width:100%;margin-bottom:16px;" onclick="entrar()">Entrar</button>
+        <p style="text-align:center;font-size:13px;color:#F8FAFC;">Não tem uma conta? <span style="color:#22c55e;cursor:pointer;" onclick="mostrarForm('cadastro')">Cadastre-se</span></p>
+      </div>
+
+      <!-- CADASTRO -->
+      <div id="form-cadastro" style="display:none;">
+        <input class="bt-input bt-input-pill" type="text" placeholder="Nome de usuário" style="margin-bottom:12px;">
+        <input class="bt-input bt-input-pill" type="email" placeholder="E-mail" style="margin-bottom:12px;">
+        <input class="bt-input bt-input-pill" type="password" placeholder="Senha" style="margin-bottom:12px;">
+        <input class="bt-input bt-input-pill" type="password" placeholder="Confirmar Senha" style="margin-bottom:22px;">
+        <button class="btn-green btn-green-pill" style="width:100%;margin-bottom:16px;" onclick="cadastrar()">Cadastrar</button>
+        <p style="text-align:center;font-size:13px;color:#F8FAFC;">Já tem uma conta? <span style="color:#22c55e;cursor:pointer;" onclick="mostrarForm('login')">Acesse aqui</span></p>
+      </div>
+
+      <!-- ESQUECEU SENHA -->
+      <div id="form-esqueceu" style="display:none;">
+        <span onclick="mostrarForm('login')" style="color:#e2e8f0;cursor:pointer;font-size:14px;text-decoration:underline;display:inline-block;margin-bottom:20px;">Voltar</span>
+        <input class="bt-input bt-input-pill" type="email" placeholder="Insira o email" style="margin-bottom:16px;">
+        <button class="btn-green btn-green-pill" style="width:100%;margin-bottom:16px;" onclick="mostrarForm('codigo')">Enviar código</button>
+        <p style="text-align:center;font-size:13px;color:#F8FAFC;">Não tem uma conta? <span style="color:#22c55e;cursor:pointer;" onclick="mostrarForm('cadastro')">Cadastre-se</span></p>
+      </div>
+
+      <!-- CÓDIGO DE VERIFICAÇÃO -->
+      <div id="form-codigo" style="display:none;">
+        <span onclick="mostrarForm('esqueceu')" style="color:#e2e8f0;cursor:pointer;font-size:14px;text-decoration:underline;display:inline-block;margin-bottom:20px;">Voltar</span>
+        <p style="font-size:14px;color:#94a3b8;margin-bottom:20px;">Insira o código de 6 dígitos enviado ao seu e-mail.</p>
+        <input class="bt-input bt-input-pill" type="text" placeholder="Código de verificação" style="margin-bottom:16px;letter-spacing:0.2em;text-align:center;font-size:18px;">
+        <button class="btn-green btn-green-pill" style="width:100%;margin-bottom:16px;" onclick="mostrarForm('login')">Confirmar</button>
+      </div>
+    </div>
+
+    <!-- IMAGEM DIREITA -->
+    <div class="auth-img-side">
+      <img src="assets/img-bigtasker-registro.png" alt="" onerror="this.parentElement.style.background='linear-gradient(135deg,#1a1a3e,#2d1b69)'">
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div style="padding:0 22px;margin-bottom:24px;">
+      <img src="assets/logo-bigtasker.svg" alt="BigTasker" style="height:24px;" onerror="this.outerHTML='<span style=\'font-family:Sora;font-size:16px;font-weight:800;color:#fff;\'>Big<span style=\'color:#7c3aed;\'>Tasker</span></span>'">
+    </div>
+    <div style="flex:1;">
+      <div class="nav-item active" onclick="navTo('dashboard')">Início</div>
+      <div class="nav-item" onclick="navTo('tarefas')">Tarefas</div>
+      <div class="nav-item" onclick="navTo('perfil')">Perfil</div>
+      <div class="nav-item" onclick="navTo('ranking')">Ranking</div>
+      <div class="nav-item" onclick="navTo('conquistas')">Conquistas</div>
+      <div class="nav-item" onclick="navTo('instrucoes')">Instruções</div>
+      <div class="nav-item" onclick="navTo('configuracoes')">Configurações</div>
+      <div class="nav-item" onclick="navTo('painel-adm')">Painel Adm</div>
+    </div>
+    <!-- User card -->
+    <div style="padding:0 14px;">
+      <div onclick="navTo('perfil')" style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:10px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color 0.2s;" onmouseenter="this.style.borderColor='#7c3aed'" onmouseleave="this.style.borderColor='#2a3347'">
+        <div style="width:34px;height:34px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:12px;flex-shrink:0;">JW</div>
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:12px;font-weight:600;font-family:'Sora';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@joao.witor</div>
+          <span class="nivel-tag nivel-ouro" style="font-size:10px;padding:2px 8px;margin-top:2px;display:inline-flex;">✦ Tasker Ouro</span>
+        </div>
+        <div style="position:relative;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();toggleNotif(this)">
+          <svg width="18" height="18" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="notif-dot" id="notif-dot"></div>
+          <div id="notif-panel" style="display:none;">
+            <div style="padding:12px 16px;border-bottom:1px solid #2a3347;font-family:'Sora';font-weight:700;font-size:14px;">Notificações</div>
+            <div class="notif-item">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-weight:700;font-size:13px;font-family:'Sora';">Conquista adquirida</span>
+                <div style="display:flex;gap:6px;align-items:center;"><span style="font-size:11px;color:#64748b;">27/05 às 16h34</span><span style="background:#22c55e;color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;">+2.000 XP</span></div>
+              </div>
+              <p style="font-size:12px;color:#94a3b8;">A conquista "O(A) melhor" foi adquirida com sucesso!</p>
+            </div>
+            <div class="notif-item">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-weight:700;font-size:13px;font-family:'Sora';">Nova reação ao post 👍</span>
+                <div style="display:flex;gap:6px;align-items:center;"><span style="font-size:11px;color:#64748b;">26/05 às 17h21</span><span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;">+0.2% de score</span></div>
+              </div>
+              <p style="font-size:12px;color:#94a3b8;">O post da tarefa "Arrumar a casa toda" recebeu um like.</p>
+            </div>
+            <div class="notif-item">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-weight:700;font-size:13px;font-family:'Sora';">Prazo da tarefa expira amanhã</span>
+                <span style="font-size:11px;color:#64748b;">24/05 às 08h00</span>
+              </div>
+              <p style="font-size:12px;color:#94a3b8;">A tarefa "Registrar últimos gastos" está com o prazo de conclusão até amanhã.</p>
+            </div>
+            <div class="notif-item">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-weight:700;font-size:13px;font-family:'Sora';">Nova reação ao post ❤️</span>
+                <div style="display:flex;gap:6px;align-items:center;"><span style="font-size:11px;color:#64748b;">22/05 às 11h24</span><span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;">+0.5% de score</span></div>
+              </div>
+              <p style="font-size:12px;color:#94a3b8;">O post da tarefa "Arrumar a casa toda" recebeu um coração.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="main-content">
+
+    <!-- INÍCIO / DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="dash-top">
+        <h1 style="font-size:28px;font-weight:800;margin-bottom:20px;">Início</h1>
+        <!-- 4 metric blocks -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;">
+          <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;">
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Tarefas concluídas</div>
+            <div style="font-size:26px;font-weight:800;font-family:'Sora';">2</div>
+          </div>
+          <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;">
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Pontuação total</div>
+            <div style="font-size:26px;font-weight:800;font-family:'Sora';">6715 <span style="font-size:14px;color:#7c3aed;">XP</span></div>
+          </div>
+          <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;">
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Pontuação semanal</div>
+            <div style="font-size:26px;font-weight:800;font-family:'Sora';">890 <span style="font-size:14px;color:#7c3aed;">XP</span></div>
+          </div>
+          <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;">
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Ranking</div>
+            <div style="font-size:26px;font-weight:800;font-family:'Sora';">37º</div>
+          </div>
+          <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;border-color:rgba(124,58,237,0.35);">
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Score obtido hoje</div>
+            <div style="font-size:26px;font-weight:800;font-family:'Sora';color:#7c3aed;">+0.7<span style="font-size:14px;">%</span></div>
+          </div>
+        </div>
+        <div id="private-feed-notice" style="display:none;" class="private-notice">Não é possível reagir aos posts com perfil privado, mas você pode visualizá-los.</div>
+      </div>
+
+      <div class="dash-bottom">
+        <!-- Feed -->
+        <div class="feed-col">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 style="font-size:18px;font-weight:700;">Feed</h2>
+            <button onclick="abrirModalPostar()" style="width:34px;height:34px;border-radius:100px;background:#7c3aed;border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+          </div>
+          <div id="feed-posts"></div>
+        </div>
+
+        <!-- Tarefas -->
+        <div class="tasks-col">
+          <h2 style="font-size:16px;font-weight:700;margin-bottom:14px;">Suas tarefas</h2>
+          <div class="tasks-inner">
+            <div class="task-card" onclick="abrirTarefa({titulo:'Entregar ata de preços',cat:'💼 Trabalho',prazo:'22/05',dif:'dificil',xp:0,atrasada:true})" style="border-color:rgba(239,68,68,0.3);">
+              <div class="badge-cat" style="margin-bottom:8px;">💼 Trabalho</div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Entregar ata de preços</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 22/05</span><span class="badge badge-atrasada">ATRASADA</span><span class="badge badge-dificil">Difícil</span><span style="margin-left:auto;font-size:11px;color:#64748b;font-weight:600;">+0 XP</span></div>
+            </div>
+            <div class="task-card" onclick="abrirTarefa({titulo:'Treinar à noite + pós treino',cat:'💪 Saúde & Fitness',prazo:'04/06',dif:'medio',xp:24})">
+              <div class="badge-cat" style="margin-bottom:8px;">💪 Saúde & Fitness</div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Treinar à noite + pós treino</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 04/06</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div>
+            </div>
+            <div class="task-card" onclick="abrirTarefa({titulo:'Estudar inglês e praticar',cat:'📘 Desenvolvimento Pessoal',prazo:'05/06',dif:'medio',xp:24})">
+              <div class="badge-cat" style="margin-bottom:8px;">📘 Desenvolvimento Pessoal</div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Estudar inglês e praticar</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 05/06</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div>
+            </div>
+            <div class="task-card" onclick="abrirTarefa({titulo:'Registrar últimos gastos',cat:'💰 Finanças',prazo:'07/06',dif:'facil',xp:9.6})">
+              <div class="badge-cat" style="margin-bottom:8px;">💰 Finanças</div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Registrar últimos gastos</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 07/06</span><span class="badge badge-facil">Fácil</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+9.6 XP</span></div>
+            </div>
+          </div>
+          <button onclick="navTo('tarefas')" style="margin-top:12px;width:100%;padding:10px;border-radius:8px;border:1px solid #7c3aed;color:#c4b5fd;font-family:'Sora';font-weight:600;font-size:13px;background:transparent;cursor:pointer;">Ver todas as tarefas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAREFAS -->
+    <div id="page-tarefas" class="page" style="padding:28px 32px;overflow:hidden;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <h1 style="font-size:28px;font-weight:800;">Tarefas</h1>
+        <button class="btn-green" onclick="abrirModalNovaTarefa()">Nova tarefa +</button>
+      </div>
+      <div style="display:flex;gap:12px;flex:1;overflow:hidden;">
+        <div class="kanban-col" id="col-afazer">
+          <div class="kanban-header">A fazer</div>
+          <div class="task-card" onclick="abrirTarefa({titulo:'Treinar à noite + pós treino',cat:'💪 Saúde & Fitness',prazo:'04/06',dif:'medio',xp:24,status:'afazer'})"><div class="badge-cat" style="margin-bottom:8px;">💪 Saúde & Fitness</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Treinar à noite + pós treino</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 04/06</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div></div>
+          <div class="task-card" onclick="abrirTarefa({titulo:'Estudar inglês e praticar',cat:'📘 Desenvolvimento Pessoal',prazo:'05/06',dif:'medio',xp:24,status:'afazer'})"><div class="badge-cat" style="margin-bottom:8px;">📘 Desenvolvimento Pessoal</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Estudar inglês e praticar</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 05/06</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div></div>
+          <div class="task-card" onclick="abrirTarefa({titulo:'Registrar últimos gastos',cat:'💰 Finanças',prazo:'07/06',dif:'facil',xp:9.6,status:'afazer'})"><div class="badge-cat" style="margin-bottom:8px;">💰 Finanças</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Registrar últimos gastos</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 07/06</span><span class="badge badge-facil">Fácil</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+9.6 XP</span></div></div>
+        </div>
+        <div class="kanban-col" id="col-fazendo">
+          <div class="kanban-header">Fazendo</div>
+          <div class="task-card" onclick="abrirTarefa({titulo:'Entregar ata de preços',cat:'💼 Trabalho',prazo:'22/05',dif:'dificil',xp:0,atrasada:true,status:'fazendo'})" style="border-color:rgba(239,68,68,0.3);"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><div class="badge-cat">💼 Trabalho</div><span class="badge badge-atrasada">ATRASADA</span></div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Entregar ata de preços</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 22/05</span><span class="badge badge-dificil">Difícil</span><span style="margin-left:auto;font-size:11px;color:#64748b;font-weight:600;">+0 XP</span></div></div>
+        </div>
+        <div class="kanban-col" id="col-concluido">
+          <div class="kanban-header">Concluído</div>
+          <div class="task-card" onclick="abrirTarefa({titulo:'Arrumar a casa toda',cat:'🏠 Casa & Rotina',prazo:'22/05',dif:'dificil',xp:48,status:'concluido',temPost:true})"><div class="badge-cat" style="margin-bottom:8px;">🏠 Casa & Rotina</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Arrumar a casa toda</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 22/05</span><span class="badge badge-dificil">Difícil</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+48 XP</span></div></div>
+          <div class="task-card" onclick="abrirTarefa({titulo:'Revisar conteúdo de UX design da faculdade',cat:'📚 Estudo',prazo:'23/05',dif:'medio',xp:24,status:'concluido',temPost:false})"><div class="badge-cat" style="margin-bottom:8px;">📚 Estudo</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Revisar conteúdo de UX design</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 23/05</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERFIL -->
+    <div id="page-perfil" class="page" style="overflow-y:auto;">
+      <div style="max-width:760px;margin:0 auto;padding:28px 32px;">
+        <div class="cover-area" id="cover-area" onclick="document.getElementById('input-capa').click()">
+          <span style="color:#475569;font-size:13px;">Clique para adicionar foto de capa</span>
+          <div class="cover-hover"><span style="color:#fff;font-weight:600;font-size:14px;">📷 Alterar capa</span></div>
+          <button id="btn-del-capa" onclick="event.stopPropagation();excluirCapa()" style="display:none;position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:12px;font-weight:600;cursor:pointer;padding:4px 10px;border-radius:8px;">✕ Remover</button>
+        </div>
+        <input type="file" id="input-capa" accept="image/*" style="display:none;" onchange="previewCapa(event)">
+        <input type="file" id="input-avatar" accept="image/*" style="display:none;" onchange="previewAvatar(event)">
+        <div style="background:#1c2333;border:1px solid #2a3347;border-top:none;border-radius:0 0 16px 16px;padding:20px 24px 24px;">
+          <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:20px;">
+            <div style="position:relative;">
+              <div id="avatar-container" onclick="document.getElementById('input-avatar').click()" style="width:68px;height:68px;border-radius:100px;border:3px solid #1c2333;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;cursor:pointer;overflow:hidden;flex-shrink:0;font-family:'Sora';margin-top:-34px;">JW</div>
+              <button id="btn-del-avatar" onclick="event.stopPropagation();excluirAvatar()" style="display:none;position:absolute;bottom:-4px;right:-4px;background:#ef4444;border:none;color:#fff;font-size:10px;font-weight:700;cursor:pointer;width:18px;height:18px;border-radius:100px;line-height:1;">✕</button>
+            </div>
+            <div style="flex:1;min-width:0;padding-top:8px;">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+                <span style="font-size:17px;font-weight:700;font-family:'Sora';">@joao.witor</span>
+                <span style="background:#7c3aed;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;">adm</span>
+                <span class="score-badge" style="margin-left:auto;" id="meu-score-badge">SCORE 84%</span>
+              </div>
+              <span class="nivel-tag nivel-ouro">✦ Tasker Ouro</span>
+              <div style="margin-top:10px;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:6px;"><span>3.501 XP</span><span>14.000 XP → Tasker Platina</span></div>
+                <div style="position:relative;">
+                  <div class="xp-bar"><div class="xp-fill" style="width:47%;"></div></div>
+                  <div style="position:absolute;bottom:-18px;left:47%;transform:translateX(-50%);text-align:center;">
+                    <div style="width:2px;height:6px;background:#c4b5fd;margin:0 auto 1px;"></div>
+                    <span style="font-size:10px;color:#c4b5fd;font-weight:700;white-space:nowrap;">6.715 XP</span>
+                  </div>
+                </div>
+                <div style="margin-top:24px;"></div>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:20px;">Um tarefeiro compulsivo navegando em busca da disciplina absoluta sob o estímulo da alta concorrência.</p>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Conquistas</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;" id="perfil-conquistas"></div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Ranking atual</h3>
+          <div style="background:#0d1117;border-radius:12px;overflow:hidden;">
+            <div style="display:flex;gap:16px;padding:8px 16px;background:#161b27;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;"><span style="width:60px;">Posição</span><span style="flex:1;">Usuário</span><span style="width:90px;">Pontuação</span><span style="width:90px;">Premiação</span></div>
+            <div style="display:flex;gap:16px;padding:12px 16px;border-top:1px solid #2a3347;font-size:13px;background:rgba(124,58,237,0.08);"><span style="width:60px;font-weight:700;font-family:'Sora';">37º</span><div style="display:flex;align-items:center;gap:8px;flex:1;"><div style="width:24px;height:24px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">JW</div><span>@joao.witor</span></div><span style="width:90px;font-weight:600;">890 XP</span><span style="width:90px;font-weight:700;color:#22c55e;">+200 XP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANKING -->
+    <div id="page-ranking" class="page" style="overflow-y:auto;height:100%;padding:28px 32px;flex-direction:column;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <h1 style="font-size:28px;font-weight:800;">Ranking</h1>
+        <span style="background:#1c2333;border:1px solid #2a3347;border-radius:100px;padding:6px 16px;font-size:13px;font-weight:600;color:#7c3aed;">Termina em 2d 12h 23min</span>
+      </div>
+      <div id="private-ranking-notice" style="display:none;" class="private-notice">Não é possível participar do ranking com perfil privado.</div>
+      <!-- Podium -->
+      <div style="display:flex;align-items:flex-end;justify-content:center;gap:16px;height:200px;margin-bottom:28px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;" onclick="abrirPerfilUsuario('trix')">
+          <div style="width:38px;height:38px;border-radius:100px;background:#2a3347;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Sora';">TR</div>
+          <span style="font-size:11px;font-weight:600;">@trix_gamer</span><span style="font-size:10px;color:#64748b;">1703 XP</span>
+          <div class="podium-block" style="width:90px;height:88px;background:rgba(124,58,237,0.25);border:1px solid rgba(124,58,237,0.4);"><span style="font-size:20px;font-weight:800;font-family:'Sora';">2º</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;" onclick="abrirPerfilUsuario('henriq')">
+          <div style="width:46px;height:46px;border-radius:100px;background:#2a3347;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:'Sora';">HQ</div>
+          <span style="font-size:12px;font-weight:700;">@henriq_</span><span style="font-size:11px;color:#22c55e;font-weight:700;">2233 XP</span>
+          <div class="podium-block" style="width:108px;height:116px;background:rgba(124,58,237,0.45);border:1px solid rgba(124,58,237,0.6);"><span style="font-size:24px;font-weight:800;font-family:'Sora';">1º</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;" onclick="abrirPerfilUsuario('eliezer')">
+          <div style="width:34px;height:34px;border-radius:100px;background:#2a3347;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Sora';">EL</div>
+          <span style="font-size:11px;font-weight:600;">@eliezerr224</span><span style="font-size:10px;color:#64748b;">1238 XP</span>
+          <div class="podium-block" style="width:84px;height:70px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);"><span style="font-size:17px;font-weight:800;font-family:'Sora';">3º</span></div>
+        </div>
+      </div>
+      <div style="background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;">
+        <div style="display:flex;gap:16px;padding:10px 20px;background:#161b27;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;"><span style="width:54px;">Posição</span><span style="flex:1;">Usuário</span><span style="width:90px;">Pontuação</span><span style="width:90px;">Premiação</span></div>
+        <div id="ranking-rows"></div>
+      </div>
+    </div>
+
+    <!-- CONQUISTAS -->
+    <div id="page-conquistas" class="page page-scroll">
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:8px;">Conquistas</h1>
+      <div style="margin-bottom:24px;"><div style="display:flex;justify-content:space-between;font-size:13px;color:#64748b;margin-bottom:6px;"><span>Progresso geral</span><span>68%</span></div><div class="xp-bar" style="height:10px;"><div class="xp-fill" style="width:68%;"></div></div></div>
+      <div id="conquistas-grid" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
+    </div>
+
+    <!-- INSTRUÇÕES -->
+    <div id="page-instrucoes" class="page page-scroll">
+      <div style="max-width:700px;">
+        <h1 style="font-size:28px;font-weight:800;margin-bottom:6px;">Instruções</h1>
+        <div style="height:1px;background:#2a3347;margin-bottom:32px;"></div>
+        <section style="margin-bottom:32px;"><h2 style="font-size:20px;font-weight:700;margin-bottom:10px;">Organização kanban 📋</h2><p style="color:#94a3b8;line-height:1.75;margin-bottom:10px;">O sistema Kanban é a principal estrutura do BigTasker. As tarefas passam por três etapas:</p><ul style="color:#94a3b8;line-height:2.2;padding-left:20px;"><li><b style="color:#e2e8f0;">A Fazer</b> → tarefas não iniciadas</li><li><b style="color:#e2e8f0;">Fazendo</b> → em andamento</li><li><b style="color:#e2e8f0;">Feito</b> → concluídas</li></ul></section>
+        <section style="margin-bottom:32px;"><h2 style="font-size:20px;font-weight:700;margin-bottom:10px;">Pontuação 🎯</h2><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;"><div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Fácil</div><div style="font-size:18px;font-weight:700;color:#22c55e;">+8 XP</div></div><div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Médio</div><div style="font-size:18px;font-weight:700;color:#60a5fa;">+20 XP</div></div><div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Difícil</div><div style="font-size:18px;font-weight:700;color:#f87171;">+40 XP</div></div></div><p style="color:#94a3b8;line-height:1.75;"><b style="color:#e2e8f0;">Modificadores:</b> Score baixo ×1.0 · Score médio ×1.2 · Score alto ×1.4 · Consistência ×1.2</p></section>
+        <section style="margin-bottom:32px;"><h2 style="font-size:20px;font-weight:700;margin-bottom:10px;">Score de Reputação 🛡️</h2><div style="display:flex;gap:20px;flex-wrap:wrap;"><span>❤️ <b style="color:#22c55e;">+0.5%</b> <span style="font-size:12px;color:#64748b;">(5/dia)</span></span><span>👍 <b style="color:#22c55e;">+0.2%</b> <span style="font-size:12px;color:#64748b;">(ilimitado)</span></span><span>👎 <b style="color:#f87171;">−0.2%</b></span></div></section>
+        <section><h2 style="font-size:20px;font-weight:700;margin-bottom:10px;">Ações a Evitar 🚫</h2><ul style="color:#94a3b8;line-height:2.2;padding-left:20px;"><li>Criar tarefas falsas</li><li>Concluir tarefas em sequência anormal</li><li>Alterar prazos para evitar penalidades</li><li>Spam no feed ou manipulação de score</li></ul></section>
+      </div>
+    </div>
+
+    <!-- CONFIGURAÇÕES -->
+    <div id="page-configuracoes" class="page page-scroll">
+      <div style="max-width:560px;">
+        <h1 style="font-size:28px;font-weight:800;margin-bottom:24px;">Configurações</h1>
+        <!-- Conta -->
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:20px;margin-bottom:12px;">
+          <div style="font-size:15px;font-weight:600;font-family:'Sora';margin-bottom:16px;">Conta</div>
+          <div style="margin-bottom:12px;"><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Nome de usuário</div><div class="settings-field"><input class="sf-input" id="sf-username" value="@joao.witor" readonly><button class="edit-btn" onclick="editarCampoInline('sf-username')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></div>
+          <div style="margin-bottom:12px;"><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Email</div><div class="settings-field"><input class="sf-input" id="sf-email" value="joao.witor@bigtasker.com" readonly><button class="edit-btn" onclick="editarCampoInline('sf-email')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></div>
+          <div><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Senha</div><div class="settings-field"><input class="sf-input" id="sf-senha" type="password" value="minha_senha_segura" readonly><button class="edit-btn" onclick="editarCampoInline('sf-senha')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div></div>
+        </div>
+        <!-- Privacidade -->
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:20px;margin-bottom:24px;">
+          <div style="font-size:15px;font-weight:600;font-family:'Sora';margin-bottom:16px;">Privacidade</div>
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:14px;" onclick="setPrivacidade(false)">
+            <input type="radio" name="privacidade" id="radio-publico" checked style="accent-color:#7c3aed;width:16px;height:16px;">
+            <div><div style="font-size:14px;font-weight:500;">Perfil público</div><div style="font-size:12px;color:#64748b;">Pode participar de campeonatos <span style="background:#2a3347;color:#94a3b8;font-size:10px;padding:2px 6px;border-radius:4px;">Padrão</span></div></div>
+          </label>
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="setPrivacidade(true)">
+            <input type="radio" name="privacidade" id="radio-privado" style="accent-color:#7c3aed;width:16px;height:16px;">
+            <div><div style="font-size:14px;font-weight:500;">Perfil privado</div><div style="font-size:12px;color:#64748b;">Não pode participar de campeonatos. Reações desabilitadas.</div></div>
+          </label>
+        </div>
+        <button onclick="sair()" style="color:#ef4444;font-size:14px;font-weight:600;background:transparent;border:none;cursor:pointer;text-decoration:underline;">Sair da conta</button>
+      </div>
+    </div>
+
+    <!-- PAINEL ADM -->
+    <div id="page-painel-adm" class="page page-scroll">
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:20px;">Painel Adm</h1>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Usuários ativos</div><div style="font-size:26px;font-weight:800;font-family:'Sora';">353</div></div>
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Novos cadastros hoje</div><div style="font-size:26px;font-weight:800;font-family:'Sora';">17</div></div>
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Pendências</div><div style="display:flex;align-items:center;gap:10px;"><span id="pendencias-num" style="font-size:26px;font-weight:800;font-family:'Sora';">1</span><span id="pendencias-icon"><span style="background:#f59e0b;color:#000;width:26px;height:26px;border-radius:100px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;">!</span></span></div></div>
+      </div>
+      <div style="background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:70px 1fr 120px 1fr;padding:10px 20px;background:#161b27;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;"><span>ID</span><span>Usuário</span><span>Tarefas/10min</span><span>Ação</span></div>
+        <div id="adm-rows">
+          <div id="adm-row-123" style="display:grid;grid-template-columns:70px 1fr 120px 1fr;padding:14px 20px;border-top:1px solid #2a3347;align-items:center;transition:all 0.4s;">
+            <span style="font-size:13px;color:#64748b;">#123</span>
+            <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:100px;background:#2a3347;"></div><span style="font-size:13px;font-weight:600;">@usuario_</span><span id="penalidade-tag" style="display:none;"></span></div>
+            <span style="font-size:14px;font-weight:700;color:#f87171;">14</span>
+            <div id="adm-acoes" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <button id="btn-penalizar" onclick="iniciarPenalidade()" style="padding:6px 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Penalizar</button>
+              <button id="btn-descartar" onclick="descartarRow()" style="padding:6px 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Descartar</button>
+              <button id="btn-historico" onclick="navTo('historico-adm')" style="padding:6px 14px;border-radius:8px;border:1px solid #7c3aed;color:#c4b5fd;font-size:12px;font-weight:600;background:transparent;cursor:pointer;">Ver histórico</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTÓRICO ADM -->
+    <div id="page-historico-adm" class="page page-scroll">
+      <div style="max-width:800px;">
+        <span onclick="navTo('painel-adm')" style="color:#7c3aed;cursor:pointer;font-weight:600;font-size:14px;display:inline-block;margin-bottom:18px;">← Voltar</span>
+        <h1 style="font-size:26px;font-weight:800;margin-bottom:22px;">Histórico de @usuario_</h1>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;">Penalidades aplicadas</h3>
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;margin-bottom:24px;">
+          <div style="display:grid;grid-template-columns:100px 1fr 130px 1fr;padding:10px 16px;background:#161b27;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;"><span>Data</span><span>Ocorrência</span><span>Penalidade</span><span>Adm</span></div>
+          <div id="historico-penalidades">
+            <div style="display:grid;grid-template-columns:100px 1fr 130px 1fr;padding:12px 16px;border-top:1px solid #2a3347;font-size:13px;align-items:center;"><span style="color:#64748b;">21/04/2026</span><span>1</span><span><span style="background:#f59e0b;color:#000;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;">Advertência</span></span><span>@joao.witor</span></div>
+            <div style="display:grid;grid-template-columns:100px 1fr 130px 1fr;padding:12px 16px;border-top:1px solid #2a3347;font-size:13px;align-items:center;"><span style="color:#64748b;">03/05/2026</span><span>2</span><span><span style="background:#ef4444;color:#fff;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;">−2% de score</span></span><span>@joao.witor</span></div>
+          </div>
+        </div>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;">Últimas tarefas</h3>
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 110px 70px 80px;padding:10px 16px;background:#161b27;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;"><span>Tarefa</span><span>Descrição</span><span>Dificuldade</span><span>Prazo</span><span>Pontos</span></div>
+          <div id="historico-tarefas-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<!-- ═══ MODAIS ═══ -->
+
+<!-- Modal Tarefa -->
+<div id="modal-tarefa" class="modal-overlay">
+  <div class="modal-box" style="max-width:660px;">
+    <button onclick="fecharModal('modal-tarefa')" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:#64748b;font-size:18px;cursor:pointer;">✕</button>
+    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Tarefa</div>
+    <div id="mt-titulo" style="font-size:20px;font-weight:700;font-family:'Sora';margin-bottom:20px;padding-right:30px;"></div>
+    <div style="margin-bottom:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Categoria</div><div id="mt-cat" class="badge-cat" style="display:inline-flex;"></div></div>
+    <div style="display:flex;gap:28px;margin-bottom:18px;flex-wrap:wrap;">
+      <div><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Prazo</div><div style="display:flex;align-items:center;gap:8px;"><span id="mt-prazo" style="font-size:13px;font-weight:600;"></span><span id="mt-atrasada" style="display:none;" class="badge badge-atrasada">ATRASADA</span></div></div>
+      <div><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Dificuldade</div><span id="mt-dif" class="badge"></span></div>
+      <div><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Previsão de pontos</div><span id="mt-xp" style="font-size:15px;font-weight:700;color:#22c55e;"></span></div>
+    </div>
+    <div style="margin-bottom:14px;"><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Descrição</div><textarea class="bt-input" style="height:80px;resize:none;" placeholder="Descrição"></textarea></div>
+    <div id="mt-acao" style="display:flex;justify-content:flex-end;"></div>
+  </div>
+</div>
+
+<!-- Modal Nova Tarefa -->
+<div id="modal-nova-tarefa" class="modal-overlay">
+  <div class="modal-box" style="max-width:660px;">
+    <button onclick="fecharModal('modal-nova-tarefa')" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:#64748b;font-size:18px;cursor:pointer;">✕</button>
+    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Tarefa</div>
+    <input id="nova-titulo" class="bt-input" style="background:transparent;border:none;border-bottom:1px solid #2a3347;border-radius:0;padding-left:0;font-size:17px;font-weight:600;font-family:'Sora';margin-bottom:18px;" placeholder="Nova tarefa">
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#64748b;margin-bottom:6px;">Categoria</div>
+      <div class="cat-dropdown" id="cat-dropdown">
+        <div class="cat-selected" onclick="toggleCatDropdown()">
+          <span id="cat-selected-text">Selecionar...</span>
+          <span>▾</span>
+        </div>
+        <div class="cat-list" id="cat-list" style="display:none;">
+          <div class="cat-option" onclick="selectCat('📘 Desenvolvimento Pessoal')">📘 Desenvolvimento Pessoal</div>
+          <div class="cat-option" onclick="selectCat('💼 Trabalho')">💼 Trabalho</div>
+          <div class="cat-option" onclick="selectCat('📚 Estudo')">📚 Estudo</div>
+          <div class="cat-option" onclick="selectCat('💪 Saúde & Fitness')">💪 Saúde & Fitness</div>
+          <div class="cat-option" onclick="selectCat('💰 Finanças')">💰 Finanças</div>
+          <div class="cat-option" onclick="selectCat('🏠 Casa & Rotina')">🏠 Casa & Rotina</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:28px;margin-bottom:16px;flex-wrap:wrap;">
+      <div><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Prazo</div><input type="date" class="bt-input" style="width:auto;" id="nova-prazo"></div>
+      <div><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Dificuldade</div>
+        <div class="diff-toggle"><button class="diff-btn" onclick="setDif(this,'facil')">Fácil</button><button class="diff-btn active-medio" onclick="setDif(this,'medio')">Médio</button><button class="diff-btn" onclick="setDif(this,'dificil')">Difícil</button></div>
+      </div>
+      <div><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Previsão de pontos</div><span id="nova-xp-preview" style="font-size:15px;font-weight:700;color:#22c55e;">+24 XP</span></div>
+    </div>
+    <div style="margin-bottom:20px;"><div style="font-size:11px;color:#64748b;margin-bottom:6px;">Descrição</div><textarea class="bt-input" style="height:80px;resize:none;" placeholder="Descrição (opcional)"></textarea></div>
+    <div style="display:flex;justify-content:flex-end;"><button class="btn-primary" onclick="criarTarefa()">Criar tarefa</button></div>
+  </div>
+</div>
+
+<!-- Modal Tarefas Concluídas -->
+<div id="modal-postar" class="modal-overlay">
+  <div class="modal-box" style="max-width:660px;">
+    <span onclick="fecharModal('modal-postar')" style="color:#7c3aed;cursor:pointer;font-weight:600;font-size:14px;display:inline-block;margin-bottom:16px;">← Voltar</span>
+    <h2 style="font-size:19px;font-weight:700;margin-bottom:6px;">Tarefas concluídas</h2>
+    <div style="height:1px;background:#2a3347;margin-bottom:18px;"></div>
+
+    <!-- Tarefa 1: tem post -->
+    <div style="margin-bottom:16px;">
+      <div class="badge-cat" style="margin-bottom:8px;">🏠 Casa & Rotina</div>
+      <div style="background:#161b27;border:1px solid #2a3347;border-radius:12px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:0;" id="tarefa1-header">
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;margin-bottom:5px;">Arrumar a casa toda</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 22/05</span><span class="badge badge-dificil">Difícil</span><span style="font-size:11px;color:#22c55e;font-weight:600;">+56 XP</span></div></div>
+          <button onclick="togglePostInline(this)" style="padding:7px 14px;border-radius:8px;border:1px solid #64748b;color:#94a3b8;font-size:12px;font-weight:600;background:transparent;cursor:pointer;white-space:nowrap;">Ver post</button>
+        </div>
+        <!-- Post inline -->
+        <div id="post-inline" style="display:none;margin-top:14px;border-top:1px solid #2a3347;padding-top:14px;">
+          <div style="background:#1c2333;border-radius:12px;overflow:hidden;max-width:340px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
+              <div style="display:flex;align-items:center;gap:7px;"><div style="width:26px;height:26px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">JW</div><span style="font-size:12px;font-weight:600;">joao.witor</span></div>
+              <span class="score-badge" style="font-size:10px;">84%</span>
+            </div>
+            <div style="position:relative;height:180px;background:linear-gradient(135deg,#1e3a5f,#1a2744);display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:40px;">🏠</span>
+              <div style="position:absolute;bottom:8px;left:8px;right:8px;"><div style="margin-bottom:3px;"><span class="badge-cat" style="font-size:9px;padding:2px 7px;">🏠 Casa & Rotina</span></div><div style="background:rgba(0,0,0,0.75);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;">Arrumar a casa toda <span class="badge badge-dificil" style="font-size:9px;padding:1px 6px;margin-left:4px;">Difícil</span></div></div>
+            </div>
+            <div style="padding:10px 12px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <button class="react-btn like" onclick="reagir(this,1)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg><span>12</span></button>
+                <button class="react-btn dislike" onclick="reagir(this,-1)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg><span>2</span></button>
+                <button class="react-btn heart" onclick="reagirCoracao(this)" style="margin-left:auto;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>1</span></button>
+              </div>
+              <p style="font-size:12px;color:#94a3b8;">2h30 de trabalho</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarefa 2: sem post -->
+    <div style="margin-bottom:14px;">
+      <div class="badge-cat" style="margin-bottom:8px;">📚 Estudos</div>
+      <div style="background:#161b27;border:1px solid #2a3347;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;"><div style="font-size:13px;font-weight:600;margin-bottom:5px;">Revisar conteúdo de UX design da faculdade</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 23/05</span><span class="badge badge-medio">Médio</span><span style="font-size:11px;color:#22c55e;font-weight:600;">+28 XP</span></div></div>
+        <button class="btn-primary" onclick="abrirEditor()" style="font-size:12px;padding:8px 16px;">Postar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editor -->
+<div id="modal-editor" class="modal-overlay">
+  <div class="modal-box" style="max-width:800px;">
+    <span onclick="fecharModal('modal-editor');document.getElementById('modal-postar').classList.add('open')" style="color:#7c3aed;cursor:pointer;font-weight:600;font-size:14px;display:inline-block;margin-bottom:16px;">← Voltar</span>
+    <h2 style="font-size:19px;font-weight:700;margin-bottom:6px;">Pré-postagem</h2>
+    <div style="height:1px;background:#2a3347;margin-bottom:18px;"></div>
+    <div style="display:flex;gap:20px;">
+      <div style="flex:1;">
+        <div style="font-size:11px;color:#64748b;margin-bottom:8px;">Editor</div>
+        <div style="background:#161b27;border:1px solid #2a3347;border-radius:10px;padding:12px;margin-bottom:10px;"><div class="badge-cat" style="margin-bottom:7px;">📚 Estudos</div><div style="font-size:13px;font-weight:600;margin-bottom:5px;">Revisar conteúdo de UX design da faculdade</div><div style="display:flex;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 23/05</span><span class="badge badge-medio">Médio</span><span style="font-size:11px;color:#22c55e;font-weight:600;">+28 XP</span></div></div>
+        <div onclick="document.getElementById('input-midia').click()" style="background:#161b27;border:2px dashed #2a3347;border-radius:10px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;margin-bottom:10px;transition:border-color 0.2s;" onmouseenter="this.style.borderColor='#7c3aed'" onmouseleave="this.style.borderColor='#2a3347'"><span style="font-size:24px;">🖼️</span><span style="font-size:12px;color:#64748b;">Insira uma mídia</span></div>
+        <input type="file" id="input-midia" accept="image/*" style="display:none;" onchange="previewMidia(event)">
+        <textarea class="bt-input" style="height:70px;resize:none;" placeholder="Crie uma legenda" id="editor-legenda" oninput="atualizarLegendaPreview()"></textarea>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:11px;color:#64748b;margin-bottom:8px;">Pré-visualização</div>
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:14px;overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:26px;height:26px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">JW</div><span style="font-size:12px;font-weight:600;">joao.witor</span></div><span class="score-badge" style="font-size:10px;">84%</span></div>
+          <div id="preview-media" style="background:#2a3347;height:160px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;"><svg width="36" height="36" fill="none" stroke="#475569" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><div style="position:absolute;bottom:7px;left:7px;right:7px;"><div style="margin-bottom:3px;"><span class="badge-cat" style="font-size:9px;padding:2px 7px;">📚 Estudos</span></div><div style="background:rgba(0,0,0,0.75);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;">Revisar conteúdo de UX design da faculdade</div></div></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;">
+            <button class="react-btn like"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
+            <button class="react-btn dislike"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
+            <button class="react-btn heart" style="margin-left:auto;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          </div>
+          <div id="preview-legenda-container" style="display:none;padding:0 12px 10px;font-size:12px;color:#94a3b8;"></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:18px;"><button class="btn-primary" onclick="alert('Postagem publicada! 🎉');fecharModal('modal-editor');">Postar</button></div>
+  </div>
+</div>
+
+<!-- Modal Perfil Usuário -->
+<div id="modal-perfil-usuario" class="modal-overlay">
+  <div class="modal-box" style="max-width:660px;padding:0;overflow:hidden;">
+    <button onclick="fecharModal('modal-perfil-usuario')" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:16px;cursor:pointer;width:30px;height:30px;border-radius:100px;z-index:10;display:flex;align-items:center;justify-content:center;">✕</button>
+    <div id="mpu-cover" style="height:130px;border-radius:16px 16px 0 0;background:linear-gradient(135deg,#1c2333,#2a1a4e);"></div>
+    <div style="padding:0 22px 22px;">
+      <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:14px;">
+        <div id="mpu-avatar" style="width:60px;height:60px;border-radius:100px;border:3px solid #1c2333;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-family:'Sora';margin-top:-30px;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;padding-top:10px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+            <span id="mpu-nome" style="font-size:16px;font-weight:700;font-family:'Sora';"></span>
+            <span id="mpu-score" class="score-badge" style="margin-left:auto;"></span>
+          </div>
+          <span id="mpu-nivel" class="nivel-tag"></span>
+          <div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:3px;"><span id="mpu-xp-atual"></span><span id="mpu-xp-prox"></span></div><div class="xp-bar"><div id="mpu-xp-fill" class="xp-fill"></div></div></div>
+        </div>
+      </div>
+      <p id="mpu-bio" style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:16px;"></p>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Conquistas</div>
+      <div id="mpu-conquistas" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;"></div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Ranking atual</div>
+      <div style="background:#0d1117;border-radius:10px;overflow:hidden;">
+        <div style="display:flex;gap:14px;padding:8px 14px;background:#161b27;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;"><span style="width:58px;">Posição</span><span style="flex:1;">Usuário</span><span style="width:85px;">Pontuação</span><span style="width:85px;">Premiação</span></div>
+        <div id="mpu-ranking" style="display:flex;gap:14px;padding:10px 14px;border-top:1px solid #2a3347;font-size:13px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const XP_MAP={facil:8,medio:20,dificil:40};
+let difAtual='medio';
+let perfilPrivado=false;
+let pendenciasCount=1;
+
+const CONQUISTAS_DATA=[
+  {key:'primeira-vitoria', nome:'Primeira Vitória', desc:'Concluir 1 tarefa',xp:30,prog:100,unlocked:true},
+  {key:'uma-maquina',nome:'Uma Máquina',desc:'Concluir 10 tarefas',xp:250,prog:100,unlocked:true},
+  {key:'sem-freio',nome:'Sem Freio',desc:'Concluir 100 tarefas',xp:1000,prog:15,unlocked:false},
+  {key:'compromisso-em-dia',nome:'Compromisso em dia',desc:'3 dias sem atrasar',xp:120,prog:100,unlocked:true},
+  {key:'constancia-inabalavel',nome:'Constância inabalável',desc:'7 dias sem atrasar',xp:200,prog:100,unlocked:true},
+  {key:'disciplina-de-ferro',nome:'Disciplina de ferro',desc:'30 dias sem atrasar',xp:900,prog:7,unlocked:false},
+  {key:'compromisso-absoluto',nome:'Compromisso absoluto',desc:'100 dias sem atrasar',xp:3000,prog:2,unlocked:false},
+  {key:'primeiro-post',nome:'Primeiro post',desc:'Publicar no feed pela 1ª vez',xp:100,prog:100,unlocked:true},
+  {key:'inspirador-a',nome:'Inspirador(a)',desc:'Receber 10 corações',xp:400,prog:100,unlocked:true},
+  {key:'influente',nome:'Influente',desc:'Receber 100 corações',xp:2000,prog:42,unlocked:false},
+  {key:'confiavel',nome:'Confiável',desc:'Score acima de 70%',xp:500,prog:100,unlocked:true},
+  {key:'referencia',nome:'Referência',desc:'Score acima de 85%',xp:1000,prog:94,unlocked:false},
+  {key:'autoridade',nome:'Autoridade',desc:'Score acima de 95%',xp:1500,prog:88,unlocked:false},
+  {key:'inalcancavel',nome:'Inalcançável',desc:'Ficar em 1º três vezes',xp:5000,prog:0,unlocked:false},
+];
+
+function getNivelInfo(xp){
+  if(xp<500) return {nome:'Tasker Bronze',cls:'nivel-bronze'};
+  if(xp<3500) return {nome:'Tasker Prata',cls:'nivel-prata'};
+  if(xp<14000) return {nome:'Tasker Ouro',cls:'nivel-ouro'};
+  if(xp<30000) return {nome:'Tasker Platina',cls:'nivel-platina'};
+  if(xp<58000) return {nome:'Tasker Diamante',cls:'nivel-diamante'};
+  if(xp<100000) return {nome:'Tasker Mestre',cls:'nivel-mestre'};
+  if(xp<150000) return {nome:'Tasker Grão-mestre',cls:'nivel-graomestre'};
+  return {nome:'Tasker Supremo',cls:'nivel-supremo'};
+}
+
+function getScoreColor(pct){
+  const n=parseInt(pct);
+  if(n<50) return '#ef4444';
+  if(n<70) return '#f59e0b';
+  if(n<90) return '#22c55e';
+  return '#7c3aed';
+}
+
+const PERFIS={
+  henriq:{nome:'@henriq_',iniciais:'HQ',scorePct:97,nivelXP:28400,gradient:'135deg,#0c4a6e,#0ea5e9',avatarGrad:'135deg,#0ea5e9,#3b82f6',bio:'Estudante de engenharia, fã de produtividade extrema. Líder do ranking por 3 semanas consecutivas.',ranking:{pos:'1º',xp:'2233 XP',premio:'+2.000 XP',cor:'#22c55e'},conquistas:['primeira-vitoria','uma-maquina','sem-freio','compromisso-em-dia','constancia-inabalavel','primeiro-post','confiavel','inspirador-a','influente']},
+  trix:{nome:'@trix_gamer',iniciais:'TR',scorePct:81,nivelXP:1703,gradient:'135deg,#1a1033,#2d1b69',avatarGrad:'135deg,#7c3aed,#4f46e5',bio:'Gamer que virou tarefeiro. Organização e games têm muito em comum.',ranking:{pos:'2º',xp:'1703 XP',premio:'+1.000 XP',cor:'#22c55e'},conquistas:['primeira-vitoria','uma-maquina','compromisso-em-dia','primeiro-post','confiavel']},
+  eliezer:{nome:'@eliezerr224',iniciais:'EL',scorePct:73,nivelXP:1238,gradient:'135deg,#134e4a,#065f46',avatarGrad:'135deg,#22c55e,#16a34a',bio:'Novo por aqui, mas determinado. Cada tarefa é um passo a mais.',ranking:{pos:'3º',xp:'1238 XP',premio:'+1.000 XP',cor:'#22c55e'},conquistas:['primeira-vitoria','primeiro-post','confiavel']},
+  igor:{nome:'@igor_damaceno44',iniciais:'IG',scorePct:95,nivelXP:18200,gradient:'135deg,#1a1a2e,#16213e',avatarGrad:'135deg,#3b82f6,#7c3aed',bio:'Leitor voraz, aprendiz constante. Uso o BigTasker para registrar minha jornada de desenvolvimento.',ranking:{pos:'5º',xp:'820 XP',premio:'+500 XP',cor:'#60a5fa'},conquistas:['primeira-vitoria','uma-maquina','sem-freio','compromisso-em-dia','constancia-inabalavel','disciplina-de-ferro','primeiro-post','inspirador-a','confiavel','referencia']},
+  angela:{nome:'@angela_task.',iniciais:'AT',scorePct:74,nivelXP:4100,gradient:'135deg,#134e4a,#022c22',avatarGrad:'135deg,#22c55e,#0ea5e9',bio:'Mãe, empreendedora e tarefeira. Organizo minha vida entre família e trabalho.',ranking:{pos:'12º',xp:'612 XP',premio:'+300 XP',cor:'#60a5fa'},conquistas:['primeira-vitoria','uma-maquina','compromisso-em-dia','primeiro-post','inspirador-a','confiavel']},
+};
+
+const FEED_POSTS=[
+  {userId:'igor',scorePct:95,cat:'📘 Desenvolvimento Pessoal',tarefa:'Leitura de livro',dif:'dificil',emoji:'📚',bgGrad:'135deg,#1a1033,#2d1b69',img:'assets/primeiro-post.png',legendaCurta:'O livro de hoje é sobre controle mental e sanidade consciente. Podemos aprender muito com o poder do',legendaCompleta:'O livro de hoje é sobre controle mental e sanidade consciente. Podemos aprender muito com o poder do foco e da disciplina. Recomendo muito para quem quer melhorar sua produtividade.',likes:3,dislikes:0,coracoes:1},
+  {userId:'angela',scorePct:74,cat:'🏠 Casa & Rotina',tarefa:'Compras no mercado',dif:'medio',emoji:'🛒',bgGrad:'135deg,#134e4a,#065f46',img:'assets/compromisso-em-dia.png',legendaCurta:'Quase 400 reais essa brincadeira! Acreditam?',legendaCompleta:null,likes:7,dislikes:1,coracoes:2},
+  {userId:'joao',scorePct:84,cat:'🏠 Casa & Rotina',tarefa:'Arrumar a casa toda',dif:'dificil',emoji:'🏠',bgGrad:'135deg,#1e3a5f,#1a2744',img:'assets/primeira-vitoria.png',legendaCurta:'2h30 de trabalho',legendaCompleta:null,likes:12,dislikes:2,coracoes:1,isYou:true},
+];
+
+// ═══════════════════════════════════════════════
+// SPLASH
+// ═══════════════════════════════════════════════
+setTimeout(()=>{
+  const s=document.getElementById('splash');
+  s.classList.add('fade-out');
+  setTimeout(()=>{s.style.display='none';document.getElementById('auth-screen').classList.add('active');},600);
+},2400);
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+function mostrarForm(tipo){
+  ['login','cadastro','esqueceu','codigo'].forEach(f=>document.getElementById('form-'+f).style.display='none');
+  document.getElementById('form-'+tipo).style.display='block';
+}
+async function entrar() {
+  const email = document.querySelector('#form-login input[type="email"]').value;
+  const senha = document.querySelector('#form-login input[type="password"]').value;
+  if (!email || !senha) { mostrarErroAuth('Preencha todos os campos'); return; }
+
+  try {
+    const res = await fetch('https://bigtasker-backend.onrender.com/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha })
+    });
+    const dados = await res.json();
+    if (res.ok && dados.token) {
+      localStorage.setItem('token', dados.token);
+      localStorage.setItem('usuario', JSON.stringify(dados.usuario));
+      document.getElementById('auth-screen').classList.remove('active');
+      document.getElementById('app').classList.add('active');
+      renderFeed(); renderConquistas(); renderRanking(); renderPerfilConquistas();
+    } else {
+      mostrarErroAuth(dados.mensagem || 'Credenciais inválidas');
+    }
+  } catch(e) {
+    // Backend offline – entra direto como demo
+    document.getElementById('auth-screen').classList.remove('active');
+    document.getElementById('app').classList.add('active');
+    renderFeed(); renderConquistas(); renderRanking(); renderPerfilConquistas();
+  }
+}
+
+function mostrarErroAuth(msg) {
+  let el = document.getElementById('auth-erro');
+  if (!el) {
+    el = document.createElement('p');
+    el.id = 'auth-erro';
+    el.style.cssText = 'color:#f87171;font-size:13px;text-align:center;margin-top:10px;';
+    document.getElementById('form-login').appendChild(el);
+  }
+  el.textContent = msg;
+}
+function sair(){
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('auth-screen').classList.add('active');
+  mostrarForm('login');
+}
+
+async function cadastrar() {
+  const nome = document.querySelector('#form-cadastro input[type="text"]').value;
+  const email = document.querySelector('#form-cadastro input[type="email"]').value;
+  const senhaInputs = document.querySelectorAll('#form-cadastro input[type="password"]');
+  const senha = senhaInputs[0].value;
+  const confirmar = senhaInputs[1].value;
+  if(!nome||!email||!senha){mostrarErroCadastro('Preencha todos os campos');return;}
+  if(senha!==confirmar){mostrarErroCadastro('As senhas não coincidem');return;}
+  try {
+    const res = await fetch('https://bigtasker-backend.onrender.com/auth/cadastro', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nome,email,senha})
+    });
+    const dados = await res.json();
+    if(res.ok && dados.token){
+      localStorage.setItem('token',dados.token);
+      localStorage.setItem('usuario',JSON.stringify(dados.usuario));
+      document.getElementById('auth-screen').classList.remove('active');
+      document.getElementById('app').classList.add('active');
+      renderFeed();renderConquistas();renderRanking();renderPerfilConquistas();
+    } else {
+      mostrarErroCadastro(dados.mensagem||'Erro no cadastro');
+    }
+  } catch(e){
+    // Backend offline – entra direto como demo
+    document.getElementById('auth-screen').classList.remove('active');
+    document.getElementById('app').classList.add('active');
+    renderFeed();renderConquistas();renderRanking();renderPerfilConquistas();
+  }
+}
+function mostrarErroCadastro(msg){
+  let el=document.getElementById('cadastro-erro');
+  if(!el){el=document.createElement('p');el.id='cadastro-erro';el.style.cssText='color:#f87171;font-size:13px;text-align:center;margin-top:10px;';document.getElementById('form-cadastro').appendChild(el);}
+  el.textContent=msg;
+}
+
+// ═══════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════
+const NAV_MAP={'dashboard':'Início','tarefas':'Tarefas','perfil':'Perfil','ranking':'Ranking','conquistas':'Conquistas','instrucoes':'Instruções','configuracoes':'Configurações','painel-adm':'Painel Adm','historico-adm':'Painel Adm'};
+function navTo(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const page=document.getElementById('page-'+id);
+  if(page) page.classList.add('active');
+  const label=NAV_MAP[id];
+  if(label) document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim()===label)n.classList.add('active');});
+}
+
+// ═══════════════════════════════════════════════
+// MODAIS
+// ═══════════════════════════════════════════════
+function fecharModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+function abrirTarefa(t){
+  document.getElementById('mt-titulo').textContent=t.titulo;
+  document.getElementById('mt-cat').textContent=t.cat;
+  document.getElementById('mt-prazo').textContent='⏱ '+t.prazo;
+  document.getElementById('mt-atrasada').style.display=t.atrasada?'inline-flex':'none';
+  const difEl=document.getElementById('mt-dif');
+  difEl.className='badge badge-'+t.dif;
+  difEl.textContent={facil:'Fácil',medio:'Médio',dificil:'Difícil'}[t.dif];
+  document.getElementById('mt-xp').textContent=t.atrasada?'+0 XP':'+'+t.xp+' XP';
+  const acao=document.getElementById('mt-acao');
+  acao.innerHTML=t.status==='concluido'?(t.temPost?`<button class="btn-outline" onclick="fecharModal('modal-tarefa');abrirModalPostar()">Ver post</button>`:`<button class="btn-primary" onclick="fecharModal('modal-tarefa');abrirEditor()">Postar</button>`):'';
+  document.getElementById('modal-tarefa').classList.add('open');
+}
+function abrirModalNovaTarefa(){document.getElementById('modal-nova-tarefa').classList.add('open');}
+function abrirModalPostar(){document.getElementById('modal-postar').classList.add('open');}
+function abrirEditor(){fecharModal('modal-postar');document.getElementById('modal-editor').classList.add('open');}
+
+// ═══════════════════════════════════════════════
+// NOTIFICAÇÕES
+// ═══════════════════════════════════════════════
+function toggleNotif(btn){
+  const panel=document.getElementById('notif-panel');
+  panel.style.display=panel.style.display==='none'?'block':'none';
+  if(panel.style.display==='block'){document.getElementById('notif-dot').style.display='none';}
+}
+document.addEventListener('click',e=>{
+  const panel=document.getElementById('notif-panel');
+  if(panel&&!panel.contains(e.target)&&!e.target.closest('[onclick*="toggleNotif"]')){panel.style.display='none';}
+});
+
+// ═══════════════════════════════════════════════
+// PERFIL USUARIO MODAL
+// ═══════════════════════════════════════════════
+function abrirPerfilUsuario(uid){
+  const p=PERFIS[uid];if(!p)return;
+  const nv=getNivelInfo(p.nivelXP);
+  const sc=getScoreColor(p.scorePct);
+  document.getElementById('mpu-cover').style.background=`linear-gradient(${p.gradient})`;
+  const av=document.getElementById('mpu-avatar');av.textContent=p.iniciais;av.style.background=`linear-gradient(${p.avatarGrad})`;
+  document.getElementById('mpu-nome').textContent=p.nome;
+  const scBadge=document.getElementById('mpu-score');scBadge.textContent='SCORE '+p.scorePct+'%';scBadge.style.background=sc;scBadge.style.color=sc==='#22c55e'||sc==='#7c3aed'?'#fff':'#000';
+  const nvEl=document.getElementById('mpu-nivel');nvEl.textContent='✦ '+nv.nome;nvEl.className='nivel-tag '+nv.cls;
+  // XP range
+  const ranges=[[0,500],[500,3500],[3500,14000],[14000,30000],[30000,58000],[58000,100000],[100000,150000],[150000,999999]];
+  let r=ranges.find(r=>p.nivelXP>=r[0]&&p.nivelXP<r[1])||ranges[0];
+  const pct=Math.round(((p.nivelXP-r[0])/(r[1]-r[0]))*100);
+  document.getElementById('mpu-xp-atual').textContent=p.nivelXP.toLocaleString()+' XP';
+  document.getElementById('mpu-xp-prox').textContent=r[1].toLocaleString()+' XP';
+  document.getElementById('mpu-xp-fill').style.width=pct+'%';
+  document.getElementById('mpu-bio').textContent=p.bio;
+  const uc=document.getElementById('mpu-conquistas');
+  uc.innerHTML=p.conquistas.map(k=>{
+    const c=CONQUISTAS_DATA.find(x=>x.key===k);if(!c)return'';
+    return`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:50px;text-align:center;"><img src="assets/${k}.png" alt="${c.nome}" style="width:42px;height:42px;object-fit:contain;" onerror="this.style.display='none'"><span style="font-size:9px;color:#94a3b8;line-height:1.3;">${c.nome}</span></div>`;
+  }).join('');
+  const rk=p.ranking;
+  document.getElementById('mpu-ranking').innerHTML=`<span style="width:58px;font-weight:700;font-family:'Sora';">${rk.pos}</span><div style="display:flex;align-items:center;gap:7px;flex:1;"><div style="width:22px;height:22px;border-radius:100px;background:linear-gradient(${p.avatarGrad});display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${p.iniciais}</div><span>${p.nome}</span></div><span style="width:85px;font-weight:600;">${rk.xp}</span><span style="width:85px;font-weight:700;color:${rk.cor};">${rk.premio}</span>`;
+  document.getElementById('modal-perfil-usuario').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════
+// FEED
+// ═══════════════════════════════════════════════
+function getIniciais(nome){
+  if(!nome)return'??';
+  const parts=nome.replace('@','').split(/[._\s]+/).filter(Boolean);
+  if(parts.length>=2)return(parts[0][0]+parts[1][0]).toUpperCase();
+  return(parts[0][0]+(parts[0][1]||parts[0][0])).toUpperCase();
+}
+
+function renderFeed(){
+  const container=document.getElementById('feed-posts');
+  container.innerHTML=FEED_POSTS.map((p,idx)=>{
+    const perfil=PERFIS[p.userId]||{};
+    const grad=perfil.avatarGrad||'135deg,#7c3aed,#3b82f6';
+    const initials=perfil.iniciais||getIniciais(perfil.nome||p.userId);
+    const sc=getScoreColor(p.scorePct);
+    const scTextColor=sc==='#22c55e'?'#000':sc==='#f59e0b'?'#000':'#fff';
+    const difLabel={facil:'Fácil',medio:'Médio',dificil:'Difícil'}[p.dif];
+    const temLerMais=p.legendaCompleta&&p.legendaCompleta!==p.legendaCurta;
+    const legendaHtml=temLerMais?`${p.legendaCurta} <span style="color:#7c3aed;cursor:pointer;" onclick="lerMais(${idx},this)">Ler mais...</span>`:p.legendaCurta||'';
+    const menuBtn=p.isYou?`<div style="position:relative;display:inline-block;">
+      <button onclick="togglePostMenu(${idx})" style="background:none;border:none;color:#64748b;cursor:pointer;padding:4px 6px;font-size:18px;line-height:1;border-radius:6px;" title="Opções">⋯</button>
+      <div id="post-menu-${idx}" style="display:none;position:absolute;right:0;top:100%;background:#1c2333;border:1px solid #2a3347;border-radius:10px;min-width:160px;z-index:100;overflow:hidden;">
+        <div onclick="editarLegendaPost(${idx})" style="padding:10px 14px;font-size:13px;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='rgba(124,58,237,0.1)'" onmouseleave="this.style.background=''">✏ Editar legenda</div>
+        <div onclick="excluirPost(${idx})" style="padding:10px 14px;font-size:13px;cursor:pointer;color:#f87171;transition:background 0.15s;" onmouseenter="this.style.background='rgba(239,68,68,0.08)'" onmouseleave="this.style.background=''">🗑 Excluir post</div>
+      </div>
+    </div>`:'';
+    const mediaHtml=p.img?`<img src="${p.img}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">`:`<span style="font-size:48px;">${p.emoji}</span>`;
+    return`<div class="post-card" id="post-card-${idx}" style="${p.isYou?'border-color:rgba(124,58,237,0.4);':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;">
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="abrirPerfilUsuario('${p.userId}')">
+          <div style="width:30px;height:30px;border-radius:100px;background:linear-gradient(${grad});display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Sora';">${initials}</div>
+          <span style="font-size:13px;font-weight:600;">${perfil.nome||p.userId}${p.isYou?' <span style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;">você</span>':''}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="score-badge" style="background:${sc};color:${scTextColor};">SCORE ${p.scorePct}%</span>
+          ${menuBtn}
+        </div>
+      </div>
+      <div style="position:relative;">
+        <div style="height:240px;background:linear-gradient(${p.bgGrad});display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+          ${mediaHtml}
+          <div style="position:absolute;bottom:9px;left:9px;right:9px;">
+            <div style="margin-bottom:3px;"><span class="badge-cat" style="font-size:9px;padding:2px 8px;">${p.cat}</span></div>
+            <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);border-radius:8px;padding:4px 9px;">
+              <span style="font-size:11px;font-weight:600;">${p.tarefa}</span>
+              <span class="badge badge-${p.dif}" style="font-size:9px;padding:1px 6px;">${difLabel}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <button class="react-btn like" data-post="${idx}" onclick="reagirPost(this,'like',${idx})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg><span>${p.likes}</span></button>
+          <button class="react-btn dislike" data-post="${idx}" onclick="reagirPost(this,'dislike',${idx})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg><span>${p.dislikes}</span></button>
+          <button class="react-btn heart" data-post="${idx}" onclick="reagirPost(this,'heart',${idx})" style="margin-left:auto;"><svg width="16" height="16" fill="${p.coracoes>0?'#F8FAFC':'none'}" stroke="${p.coracoes>0?'#F8FAFC':'currentColor'}" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>${p.coracoes}</span></button>
+        </div>
+        <p id="legenda-${idx}" style="font-size:13px;color:#94a3b8;white-space:pre-wrap;">${legendaHtml}</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePostMenu(idx){
+  const m=document.getElementById('post-menu-'+idx);
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+document.addEventListener('click',e=>{
+  FEED_POSTS.forEach((_,idx)=>{
+    const m=document.getElementById('post-menu-'+idx);
+    if(m&&!m.contains(e.target)&&!e.target.closest(`button[onclick*="togglePostMenu(${idx})"]`))m.style.display='none';
+  });
+});
+function excluirPost(idx){
+  if(!confirm('Excluir este post?'))return;
+  const card=document.getElementById('post-card-'+idx);
+  if(card)card.remove();
+}
+function editarLegendaPost(idx){
+  const el=document.getElementById('legenda-'+idx);
+  const nova=prompt('Editar legenda:',FEED_POSTS[idx].legendaCurta);
+  if(nova!==null){FEED_POSTS[idx].legendaCurta=nova;FEED_POSTS[idx].legendaCompleta=null;el.textContent=nova;}
+  const m=document.getElementById('post-menu-'+idx);if(m)m.style.display='none';
+}
+
+function lerMais(idx,span){
+  const p=FEED_POSTS[idx];
+  const el=document.getElementById('legenda-'+idx);
+  el.innerHTML=p.legendaCompleta;
+}
+
+// Reação única por post
+const postReacoes={};
+function reagirPost(btn,tipo,idx){
+  if(perfilPrivado){alert('Perfil privado: reações desabilitadas.');return;}
+  const postGroup=document.querySelectorAll(`[data-post="${idx}"]`);
+  const anterior=postReacoes[idx];
+  if(anterior===tipo){
+    // toggle off
+    btn.classList.remove('active');
+    const svg=btn.querySelector('svg');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');
+    const span=btn.querySelector('span');span.textContent=parseInt(span.textContent)-1;
+    postReacoes[idx]=null;return;
+  }
+  // remove anterior
+  if(anterior){
+    postGroup.forEach(b=>{
+      if(b.classList.contains(anterior)){
+        b.classList.remove('active');
+        const sv=b.querySelector('svg');sv.setAttribute('fill','none');sv.setAttribute('stroke','currentColor');
+        const sp=b.querySelector('span');sp.textContent=parseInt(sp.textContent)-1;
+      }
+    });
+  }
+  // add novo
+  btn.classList.add('active');
+  const svg=btn.querySelector('svg');svg.setAttribute('fill','#F8FAFC');svg.setAttribute('stroke','#F8FAFC');
+  const span=btn.querySelector('span');span.textContent=parseInt(span.textContent)+1;
+  postReacoes[idx]=tipo;
+}
+
+// ═══════════════════════════════════════════════
+// CONQUISTAS
+// ═══════════════════════════════════════════════
+function renderConquistas(){
+  const grid=document.getElementById('conquistas-grid');
+  grid.innerHTML=CONQUISTAS_DATA.map(c=>`
+    <div class="conquista-card ${c.unlocked?'unlocked':''}">
+      <span class="xp-tag-c ${c.unlocked?'unlocked':'locked'}">+${c.xp.toLocaleString()} XP</span>
+      <img src="assets/${c.key}.png" alt="${c.nome}" class="conquista-img ${c.unlocked?'':'locked'}" onerror="this.style.display='none'">
+      <div style="font-size:12px;font-weight:700;font-family:'Sora';">${c.nome}</div>
+      <div style="font-size:11px;color:#64748b;">${c.desc}</div>
+      ${!c.unlocked?`<div class="prog-bar"><div class="prog-fill" style="width:${c.prog}%;"></div></div><div style="font-size:10px;color:#64748b;align-self:flex-end;">${c.prog}%</div>`:''}
+    </div>`).join('');
+}
+
+function renderPerfilConquistas(){
+  const container=document.getElementById('perfil-conquistas');
+  container.innerHTML=CONQUISTAS_DATA.filter(c=>c.unlocked).map(c=>`
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:52px;text-align:center;">
+      <img src="assets/${c.key}.png" alt="${c.nome}" style="width:44px;height:44px;object-fit:contain;" onerror="this.style.display='none'">
+      <span style="font-size:9px;color:#94a3b8;line-height:1.3;">${c.nome}</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// RANKING
+// ═══════════════════════════════════════════════
+function renderRanking(){
+  const rows=[
+    {pos:1,uid:'henriq',user:'@henriq_',xp:'2233 XP',premio:'+2.000 XP',cor:'#22c55e'},
+    {pos:2,uid:'trix',user:'@trix_gamer',xp:'1703 XP',premio:'+1.000 XP',cor:'#22c55e'},
+    {pos:3,uid:'eliezer',user:'@eliezerr224',xp:'1238 XP',premio:'+1.000 XP',cor:'#22c55e'},
+    ...Array.from({length:7},(_,i)=>({pos:i+4,uid:null,user:'@usuario_',xp:'0000 XP',premio:'+500 XP',cor:'#60a5fa'})),
+    ...Array.from({length:10},(_,i)=>({pos:i+11,uid:null,user:'@usuario_',xp:'0000 XP',premio:'+300 XP',cor:'#60a5fa'})),
+    ...Array.from({length:16},(_,i)=>({pos:i+21,uid:null,user:'@usuario_',xp:'0000 XP',premio:'+200 XP',cor:'#94a3b8'})),
+    {pos:37,uid:'joao',user:'@joao.witor',xp:'890 XP',premio:'+200 XP',cor:'#94a3b8',isYou:true},
+    ...Array.from({length:12},(_,i)=>({pos:i+38,uid:null,user:'@usuario_',xp:'0000 XP',premio:'+200 XP',cor:'#94a3b8'})),
+    ...Array.from({length:13},(_,i)=>({pos:i+50,uid:null,user:'@usuario_',xp:'0000 XP',premio:'+100 XP',cor:'#475569'})),
+  ];
+  document.getElementById('ranking-rows').innerHTML=rows.map(r=>`
+    <div class="ranking-row" style="display:flex;gap:16px;padding:10px 20px;border-top:1px solid #2a3347;font-size:13px;align-items:center;${r.isYou?'background:rgba(124,58,237,0.08);':''}" ${r.uid?`onclick="abrirPerfilUsuario('${r.uid}')"`:''}><span style="width:54px;font-weight:${r.pos<=3?'800':'500'};font-family:'Sora';">${r.pos}º</span>
+    <div style="display:flex;align-items:center;gap:8px;flex:1;"><div style="width:24px;height:24px;border-radius:100px;background:${r.isYou?'linear-gradient(135deg,#7c3aed,#3b82f6)':'#2a3347'};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${r.isYou?'JW':''}</div><span style="font-weight:${r.isYou?'600':'400'};">${r.user}</span></div>
+    <span style="width:90px;font-weight:600;">${r.xp}</span><span style="width:90px;font-weight:700;color:${r.cor};">${r.premio}</span></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// NOVA TAREFA
+// ═══════════════════════════════════════════════
+function setDif(btn,dif){document.querySelectorAll('.diff-btn').forEach(b=>b.className='diff-btn');btn.classList.add('active-'+dif);difAtual=dif;document.getElementById('nova-xp-preview').textContent='+'+XP_MAP[dif]+' XP';}
+function criarTarefa(){const t=document.getElementById('nova-titulo').value;if(!t.trim()){alert('Insira um título');return;}fecharModal('modal-nova-tarefa');alert('Tarefa "'+t+'" criada! ✅');}
+
+// CATEGORIA DROPDOWN
+function toggleCatDropdown(){const list=document.getElementById('cat-list');list.style.display=list.style.display==='none'?'block':'none';}
+function selectCat(val){document.getElementById('cat-selected-text').textContent=val;document.getElementById('cat-list').style.display='none';}
+document.addEventListener('click',e=>{if(!e.target.closest('#cat-dropdown')){const l=document.getElementById('cat-list');if(l)l.style.display='none';}});
+
+// ═══════════════════════════════════════════════
+// EDITOR
+// ═══════════════════════════════════════════════
+function atualizarLegendaPreview(){const txt=document.getElementById('editor-legenda').value;const c=document.getElementById('preview-legenda-container');if(txt.trim()){c.style.display='block';c.style.whiteSpace='pre-wrap';c.textContent=txt;}else{c.style.display='none';}}
+function previewMidia(e){const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);const p=document.getElementById('preview-media');p.style.backgroundImage=`url(${url})`;p.style.backgroundSize='cover';p.style.backgroundPosition='center';}
+
+// PERFIL FOTO
+function previewCapa(e){const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);const c=document.getElementById('cover-area');c.style.backgroundImage=`url(${url})`;c.style.backgroundSize='cover';c.style.backgroundPosition='center';c.querySelector('span').style.display='none';document.getElementById('btn-del-capa').style.display='block';}
+function excluirCapa(){const c=document.getElementById('cover-area');c.style.backgroundImage='';c.style.background='linear-gradient(135deg,#1c2333,#2a1a4e)';c.querySelector('span').style.display='';document.getElementById('btn-del-capa').style.display='none';document.getElementById('input-capa').value='';}
+function previewAvatar(e){const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);const a=document.getElementById('avatar-container');a.style.backgroundImage=`url(${url})`;a.style.backgroundSize='cover';a.textContent='';document.getElementById('btn-del-avatar').style.display='flex';}
+function excluirAvatar(){const a=document.getElementById('avatar-container');a.style.backgroundImage='';a.style.background='linear-gradient(135deg,#7c3aed,#3b82f6)';a.textContent='JW';document.getElementById('btn-del-avatar').style.display='none';document.getElementById('input-avatar').value='';}
+
+// ═══════════════════════════════════════════════
+// POSTAR INLINE
+// ═══════════════════════════════════════════════
+function togglePostInline(btn){
+  const inline=document.getElementById('post-inline');
+  const visible=inline.style.display!=='none';
+  inline.style.display=visible?'none':'block';
+  btn.textContent=visible?'Ver post':'Ocultar post';
+}
+
+// ═══════════════════════════════════════════════
+// PRIVACIDADE
+// ═══════════════════════════════════════════════
+function setPrivacidade(priv){
+  perfilPrivado=priv;
+  document.getElementById('private-feed-notice').style.display=priv?'block':'none';
+  document.getElementById('private-ranking-notice').style.display=priv?'block':'none';
+  if(priv){document.getElementById('radio-privado').checked=true;}
+  else{document.getElementById('radio-publico').checked=true;}
+}
+
+// ═══════════════════════════════════════════════
+// CONFIGURAÇÕES
+// ═══════════════════════════════════════════════
+function editarCampoInline(id){
+  const input=document.getElementById(id);
+  if(input.readOnly){
+    input.readOnly=false;
+    input.style.borderBottom='1px solid #7c3aed';
+    input.focus();
+    if(input.type==='password') input.type='text';
+    input.addEventListener('blur',()=>{input.readOnly=true;input.style.borderBottom='';if(id==='sf-senha')input.type='password';},{once:true});
+  }
+}
+
+// ═══════════════════════════════════════════════
+// PAINEL ADM
+// ═══════════════════════════════════════════════
+let penalidadeCount=0;
+function iniciarPenalidade(){
+  const acoes=document.getElementById('adm-acoes');
+  // Hide all current buttons
+  acoes.querySelectorAll('button').forEach(b=>b.style.display='none');
+  acoes.innerHTML+=`<button id="btn-cancel-pen" onclick="cancelarPenalidade()" style="padding:6px 14px;border-radius:8px;border:none;background:transparent;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Cancelar</button><button id="btn-confirm-pen" onclick="confirmarPenalidade()" style="padding:6px 14px;border-radius:8px;border:none;background:transparent;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Confirmar</button>`;
+}
+function cancelarPenalidade(){
+  const acoes=document.getElementById('adm-acoes');
+  const cancel=document.getElementById('btn-cancel-pen');
+  const confirm=document.getElementById('btn-confirm-pen');
+  if(cancel)cancel.remove();
+  if(confirm)confirm.remove();
+  acoes.querySelectorAll('button').forEach(b=>b.style.display='');
+}
+function confirmarPenalidade(){
+  penalidadeCount++;
+  const tag=document.getElementById('penalidade-tag');
+  tag.style.display='inline-flex';
+  tag.innerHTML=`<span style="background:#ef4444;color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:100px;">Penalizado (${penalidadeCount}x)</span>`;
+  // Add to history
+  const hist=document.getElementById('historico-penalidades');
+  const hoje=new Date();const d=`${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+  hist.innerHTML+=`<div style="display:grid;grid-template-columns:100px 1fr 130px 1fr;padding:12px 16px;border-top:1px solid #2a3347;font-size:13px;align-items:center;"><span style="color:#64748b;">${d}</span><span>${penalidadeCount+2}</span><span><span style="background:#ef4444;color:#fff;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;">Penalidade</span></span><span>@joao.witor</span></div>`;
+  // Remove cancel/confirm and restore all buttons
+  const cancel=document.getElementById('btn-cancel-pen');
+  const confirm=document.getElementById('btn-confirm-pen');
+  if(cancel)cancel.remove();
+  if(confirm)confirm.remove();
+  const acoes=document.getElementById('adm-acoes');
+  acoes.querySelectorAll('button').forEach(b=>b.style.display='');
+  atualizarPendencias(-1);
+}
+function descartarRow(){
+  const row=document.getElementById('adm-row-123');
+  row.classList.add('slide-out');
+  setTimeout(()=>row.remove(),400);
+  atualizarPendencias(-1);
+}
+function atualizarPendencias(delta){
+  pendenciasCount=Math.max(0,pendenciasCount+delta);
+  document.getElementById('pendencias-num').textContent=pendenciasCount;
+  const icon=document.getElementById('pendencias-icon');
+  if(pendenciasCount===0){icon.innerHTML=`<div style="width:26px;height:26px;border-radius:100px;background:#22c55e;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" fill="none" stroke="#000" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>`;}
+}
+
+// HISTÓRICO TAREFAS
+function renderHistoricoTarefas(){
+  const list=document.getElementById('historico-tarefas-list');
+  const tarefas=Array(14).fill({titulo:'ssawqedrfd',desc:'–',dif:'dificil',prazo:'09/06',pts:'48 XP'});
+  list.innerHTML=tarefas.map(t=>`<div style="display:grid;grid-template-columns:1fr 1fr 110px 70px 80px;padding:10px 16px;border-top:1px solid #2a3347;font-size:13px;align-items:center;background:#1c2333;margin:4px 8px;border-radius:8px;border:1px solid #2a3347;"><span style="color:#94a3b8;">${t.titulo}</span><span style="color:#475569;">${t.desc}</span><span><span class="badge badge-dificil">${{facil:'Fácil',medio:'Médio',dificil:'Difícil'}[t.dif]}</span></span><span style="color:#64748b;">${t.prazo}</span><span style="font-weight:600;color:#22c55e;">${t.pts}</span></div>`).join('');
+}
+
+// KANBAN DRAG
+window.addEventListener('load',()=>{
+  ['col-afazer','col-fazendo','col-concluido'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) new Sortable(el,{
+      group:'kanban',animation:150,handle:'.task-card',ghostClass:'opacity-50',
+      onAdd:function(evt){
+        if(evt.to.id==='col-concluido'){
+          const card=evt.item;
+          // Only add button if not already there
+          if(!card.querySelector('.btn-postar-card')){
+            const btn=document.createElement('div');
+            btn.className='btn-postar-card';
+            btn.style.cssText='display:flex;justify-content:flex-end;margin-top:8px;';
+            btn.innerHTML=`<button onclick="abrirEditor()" style="padding:5px 12px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Postar</button>`;
+            card.appendChild(btn);
           }
+        } else {
+          // Remove button if moved out of concluido
+          const btn=evt.item.querySelector('.btn-postar-card');
+          if(btn)btn.remove();
         }
       }
+    });
+  });
+  // Also mark cards already in concluido
+  const concluido=document.getElementById('col-concluido');
+  if(concluido)concluido.querySelectorAll('.task-card').forEach(card=>{
+    if(!card.querySelector('.btn-postar-card')){
+      const temPost=card.getAttribute('onclick')?.includes('temPost:true');
+      const btn=document.createElement('div');
+      btn.className='btn-postar-card';
+      btn.style.cssText='display:flex;justify-content:flex-end;margin-top:8px;';
+      btn.innerHTML=temPost
+        ?`<button onclick="abrirModalPostar()" style="padding:5px 12px;border-radius:8px;border:1px solid #7c3aed;background:transparent;color:#c4b5fd;font-size:11px;font-weight:600;cursor:pointer;">Ver post</button>`
+        :`<button onclick="abrirEditor()" style="padding:5px 12px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Postar</button>`;
+      card.appendChild(btn);
     }
-  </script>
-  <link rel="stylesheet" href="css/style.css">
-</head>
+  });
+});
+</script>
+</body>
+</html>
