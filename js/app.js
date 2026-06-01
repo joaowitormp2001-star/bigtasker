@@ -704,6 +704,7 @@ function nomeArquivo(nome) {
   return nome
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\(([a-z])\)/g, '-$1')  // (a) → -a
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-');
