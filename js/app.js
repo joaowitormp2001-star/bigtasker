@@ -335,6 +335,10 @@ function sair() {
 // ABRIR APP — carrega tudo após login
 // ─────────────────────────────────────────────
 async function abrirApp(usuario) {
+  if (!getToken()) {
+    document.getElementById('auth-screen').classList.add('active');
+    return;
+  }
   document.getElementById('auth-screen').classList.remove('active');
   document.getElementById('app').classList.add('active');
 
@@ -543,7 +547,7 @@ async function criarTarefa() {
   const dificuldade = difAtual || 'medio';
   const id_categoria = categoriaAtual || 1;
 
-  if (!titulo || !id_categoria) {
+  if (!titulo) {
     mostrarToast('Preenche os campos para criar a tarefa.', true);
     return;
   }
@@ -817,15 +821,42 @@ function atualizarContadorRanking(fimISO) {
 
 function renderizarRanking(rows) {
   const container = document.getElementById('ranking-rows');
+  const podium    = document.getElementById('ranking-podium');
   if (!container) return;
 
   const u = usuarioAtual || {};
 
   if (rows.length === 0) {
     container.innerHTML = '<p style="color:#64748b;text-align:center;padding:32px;">Nenhuma competição ativa no momento.</p>';
+    if (podium) podium.innerHTML = '';
     return;
   }
 
+  // Podium (top 3)
+  if (podium && rows.length >= 1) {
+    const ordem = [rows[1], rows[0], rows[2]].filter(Boolean); // 2º, 1º, 3º
+    const alturas = [88, 116, 70];
+    const opacidades = [0.25, 0.45, 0.15];
+    const tamanhos  = [38, 46, 34];
+    const posicoes  = [2, 1, 3];
+    podium.innerHTML = ordem.map((r, idx) => {
+      if (!r) return '';
+      const ini = getIniciais(r.nome);
+      const h   = alturas[idx];
+      const op  = opacidades[idx];
+      const sz  = tamanhos[idx];
+      const pos = posicoes[idx];
+      const isYou = r.id_usuario === u.id;
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <div style="width:${sz}px;height:${sz}px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:${sz>40?14:11}px;font-weight:700;font-family:'Sora';">${ini}</div>
+        <span style="font-size:11px;font-weight:600;">@${r.nome}${isYou?' <span style="background:#7c3aed;color:#fff;font-size:8px;padding:1px 4px;border-radius:3px;">você</span>':''}</span>
+        <span style="font-size:10px;color:${pos===1?'#22c55e':'#64748b'};">${r.xp_obtido} XP</span>
+        <div class="podium-block" style="width:${sz+52}px;height:${h}px;background:rgba(124,58,237,${op});border:1px solid rgba(124,58,237,${op+0.15});"><span style="font-size:${pos===1?24:pos===2?20:17}px;font-weight:800;font-family:'Sora';">${pos}º</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Lista completa
   container.innerHTML = rows.map((r, i) => {
     const isYou = r.id_usuario === u.id;
     const iniciais = getIniciais(r.nome);
@@ -833,10 +864,10 @@ function renderizarRanking(rows) {
       <span style="width:54px;font-weight:700;font-family:'Sora';">${i + 1}º</span>
       <div style="display:flex;align-items:center;gap:8px;flex:1;">
         <div style="width:26px;height:26px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${iniciais}</div>
-        <span>${r.nome}${isYou ? ' <span style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">você</span>' : ''}</span>
+        <span>@${r.nome}${isYou ? ' <span style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">você</span>' : ''}</span>
       </div>
       <span style="width:90px;font-weight:600;">${r.xp_obtido} XP</span>
-      <span style="width:90px;font-weight:700;color:#22c55e;">+${Math.floor(r.xp_obtido * 0.1)} XP</span>
+      <span style="width:90px;font-weight:700;color:#22c55e;">+${Math.floor((r.xp_obtido||0) * 0.1)} XP</span>
     </div>`;
   }).join('');
 }

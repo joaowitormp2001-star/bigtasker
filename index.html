@@ -377,13 +377,13 @@ input[type="date"]{color-scheme:dark;color:#fff;}
       </div>
       <div style="display:flex;gap:12px;flex:1;overflow:hidden;">
         <div class="kanban-col" id="col-afazer">
-          <div class="kanban-header" data-sortable-ignore="true" style="pointer-events:none;user-select:none;position:sticky;top:0;z-index:2;background:#0d1117;">A fazer</div>
+          <div class="kanban-header" data-sortable-ignore="true" style="pointer-events:none;user-select:none;">A fazer</div>
         </div>
         <div class="kanban-col" id="col-fazendo">
-          <div class="kanban-header" data-sortable-ignore="true" style="pointer-events:none;user-select:none;position:sticky;top:0;z-index:2;background:#0d1117;">Fazendo</div>
+          <div class="kanban-header" data-sortable-ignore="true" style="pointer-events:none;user-select:none;">Fazendo</div>
         </div>
         <div class="kanban-col" id="col-concluido">
-          <div class="kanban-header" data-sortable-ignore="true" style="pointer-events:none;user-select:none;position:sticky;top:0;z-index:2;background:#0d1117;">Concluído</div>
+          <div class="kanban-header" data-sortable-ignore="true" style="pointer-events:none;user-select:none;">Concluído</div>
         </div>
       </div>
     </div>
@@ -443,24 +443,7 @@ input[type="date"]{color-scheme:dark;color:#fff;}
         <span style="background:#1c2333;border:1px solid #2a3347;border-radius:100px;padding:6px 16px;font-size:13px;font-weight:600;color:#7c3aed;"><span id="ranking-timer">Termina em 2d 12h 23min</span></span>
       </div>
       <div id="private-ranking-notice" style="display:none;" class="private-notice">Não é possível participar do ranking com perfil privado.</div>
-      <!-- Podium -->
-      <div style="display:flex;align-items:flex-end;justify-content:center;gap:16px;height:200px;margin-bottom:28px;">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;" onclick="abrirPerfilUsuario('trix')">
-          <div style="width:38px;height:38px;border-radius:100px;background:#2a3347;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Sora';">TR</div>
-          <span style="font-size:11px;font-weight:600;">@trix_gamer</span><span style="font-size:10px;color:#64748b;">1703 XP</span>
-          <div class="podium-block" style="width:90px;height:88px;background:rgba(124,58,237,0.25);border:1px solid rgba(124,58,237,0.4);"><span style="font-size:20px;font-weight:800;font-family:'Sora';">2º</span></div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;" onclick="abrirPerfilUsuario('henriq')">
-          <div style="width:46px;height:46px;border-radius:100px;background:#2a3347;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:'Sora';">HQ</div>
-          <span style="font-size:12px;font-weight:700;">@henriq_</span><span style="font-size:11px;color:#22c55e;font-weight:700;">2233 XP</span>
-          <div class="podium-block" style="width:108px;height:116px;background:rgba(124,58,237,0.45);border:1px solid rgba(124,58,237,0.6);"><span style="font-size:24px;font-weight:800;font-family:'Sora';">1º</span></div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;" onclick="abrirPerfilUsuario('eliezer')">
-          <div style="width:34px;height:34px;border-radius:100px;background:#2a3347;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Sora';">EL</div>
-          <span style="font-size:11px;font-weight:600;">@eliezerr224</span><span style="font-size:10px;color:#64748b;">1238 XP</span>
-          <div class="podium-block" style="width:84px;height:70px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);"><span style="font-size:17px;font-weight:800;font-family:'Sora';">3º</span></div>
-        </div>
-      </div>
+      <div id="ranking-podium" style="display:flex;align-items:flex-end;justify-content:center;gap:16px;min-height:160px;margin-bottom:28px;"></div>
       <div style="background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;">
         <div style="display:flex;gap:16px;padding:10px 20px;background:#161b27;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;"><span style="width:54px;">Posição</span><span style="flex:1;">Usuário</span><span style="width:90px;">Pontuação</span><span style="width:90px;">Premiação</span></div>
         <div id="ranking-rows"></div>
