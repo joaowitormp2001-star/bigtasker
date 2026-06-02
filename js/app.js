@@ -139,6 +139,10 @@ function aplicarUsuarioNaUI(u) {
   // — Configurações: preenche campos
   preencherConfiguracoes(u);
 
+  // — Perfil: bio
+  const perfilBio = document.getElementById('perfil-bio');
+  if (perfilBio) perfilBio.textContent = u.biografia || '';
+
   // — Painel ADM: só aparece para admins
   const navAdm = document.getElementById('nav-painel-adm');
   if (navAdm) navAdm.style.display = u.is_admin ? 'block' : 'none';
@@ -533,24 +537,45 @@ async function concluirTarefa(id) {
 
 // Nova tarefa
 async function criarTarefa() {
-  const titulo     = document.getElementById('nt-titulo')?.value?.trim();
-  const descricao  = document.getElementById('nt-descricao')?.value?.trim();
-  const prazo      = document.getElementById('nt-prazo')?.value;
+  const titulo      = document.getElementById('nova-titulo')?.value?.trim();
+  const descricao   = document.getElementById('nova-descricao')?.value?.trim();
+  const prazo       = document.getElementById('nova-prazo')?.value;
   const dificuldade = difAtual || 'medio';
   const id_categoria = categoriaAtual || 1;
 
-  if (!titulo) { mostrarToast('Título é obrigatório', true); return; }
+  if (!titulo || !id_categoria) {
+    mostrarToast('Preenche os campos para criar a tarefa.', true);
+    return;
+  }
+
+  const btnCriar = document.querySelector('#modal-nova-tarefa .btn-primary');
+  if (btnCriar) { btnCriar.textContent = 'Criando...'; btnCriar.disabled = true; }
 
   const { ok, data } = await apiFetch('/tarefas', 'POST', {
     titulo, descricao, prazo, dificuldade, id_categoria
   });
 
+  if (btnCriar) { btnCriar.textContent = 'Criar tarefa'; btnCriar.disabled = false; }
+
   if (ok) {
     fecharModal('modal-nova-tarefa');
+    // Limpa campos
+    document.getElementById('nova-titulo').value = '';
+    const desc = document.getElementById('nova-descricao');
+    if (desc) desc.value = '';
+    const prazoEl = document.getElementById('nova-prazo');
+    if (prazoEl) prazoEl.value = '';
+    categoriaAtual = 1;
+    difAtual = 'medio';
+    const catText = document.getElementById('cat-selected-text');
+    if (catText) catText.textContent = 'Selecionar...';
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active-facil','active-medio','active-dificil'));
+    const btnMedio = document.querySelector('.diff-btn[onclick*="medio"]');
+    if (btnMedio) btnMedio.classList.add('active-medio');
     mostrarToast('Tarefa criada! ✓');
     await carregarTarefas();
   } else {
-    mostrarToast(data.mensagem || 'Erro ao criar tarefa', true);
+    mostrarToast(data.mensagem || 'Preenche os campos para criar a tarefa.', true);
   }
 }
 
@@ -723,7 +748,7 @@ function renderizarConquistas(conquistas) {
 
   grid.innerHTML = conquistas.map(c => `
     <div class="conquista-card ${c.desbloqueada ? 'unlocked' : ''}">
-      <img class="conquista-img ${c.desbloqueada ? '' : 'locked'}" src="assets/${c.tipo}-${c.id}.png" alt="${c.nome}" onerror="this.style.display='none'">
+      <img class="conquista-img ${c.desbloqueada ? '' : 'locked'}" src="assets/${nomeArquivo(c.nome)}.png" alt="${c.nome}" onerror="this.outerHTML='<span style=\"font-size:32px;\">' + c.arte + '</span>'">
       <div style="font-size:13px;font-weight:700;font-family:'Sora';">${c.nome}</div>
       <div style="font-size:11px;color:#64748b;text-align:center;">${c.descricao}</div>
       <span class="xp-tag-c ${c.desbloqueada ? 'unlocked' : 'locked'}">+${c.xp_de_resgate} XP</span>
@@ -757,6 +782,23 @@ async function carregarRanking() {
   }
 
   renderizarRanking(data.ranking || []);
+  // Update perfil ranking row
+  const u = usuarioAtual || {};
+  const meuRank = (data.ranking || []).find(r => r.id_usuario === u.id);
+  const perfilRow = document.getElementById('perfil-ranking-row');
+  if (perfilRow && meuRank) {
+    const iniciais = getIniciais(u.nome || 'U');
+    perfilRow.innerHTML = `
+      <span style="width:60px;font-weight:700;font-family:'Sora';">${meuRank.posicao || (data.ranking.indexOf(meuRank)+1)}º</span>
+      <div style="display:flex;align-items:center;gap:8px;flex:1;">
+        <div style="width:24px;height:24px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${iniciais}</div>
+        <span>@${u.nome}</span>
+      </div>
+      <span style="width:90px;font-weight:600;">${meuRank.xp_obtido} XP</span>
+      <span style="width:90px;font-weight:700;color:#22c55e;">+${Math.floor((meuRank.xp_obtido||0)*0.1)} XP</span>`;
+  } else if (perfilRow) {
+    perfilRow.innerHTML = '<span style="color:#64748b;font-size:13px;padding:8px;">Sem ranking ativo no momento.</span>';
+  }
 }
 
 function atualizarContadorRanking(fimISO) {
@@ -1045,15 +1087,30 @@ setTimeout(() => {
 let difAtual = 'medio';
 let categoriaAtual = 1;
 
-function selecionarDif(dif) {
+function selecionarDif(dif) { setDif(null, dif); }
+
+function setDif(btn, dif) {
   difAtual = dif;
   document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active-facil', 'active-medio', 'active-dificil'));
-  const btn = document.querySelector(`.diff-btn[data-dif="${dif}"]`);
   if (btn) btn.classList.add('active-' + dif);
-  // Atualiza XP preview
+  else {
+    const b = document.querySelector('.diff-btn[onclick*="' + dif + '"]');
+    if (b) b.classList.add('active-' + dif);
+  }
   const u = usuarioAtual || {};
-  const xpPreview = document.getElementById('nt-xp-preview');
+  const xpPreview = document.getElementById('nova-xp-preview');
   if (xpPreview) xpPreview.textContent = '+' + calcularXP(dif, u.score || 60) + ' XP';
+}
+
+function nomeArquivo(nome) {
+  return nome
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\(([a-z])\)/g, '-$1')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
 }
 
 // ─────────────────────────────────────────────
