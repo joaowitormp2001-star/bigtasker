@@ -161,8 +161,10 @@ function calcXpPorcentagem(xp) {
 function preencherConfiguracoes(u) {
   const sfUsername = document.getElementById('sf-username');
   const sfEmail    = document.getElementById('sf-email');
+  const sfBio      = document.getElementById('sf-bio');
   if (sfUsername) sfUsername.value = '@' + u.nome;
   if (sfEmail)    sfEmail.value    = u.email || '';
+  if (sfBio)      sfBio.value      = u.biografia || '';
 }
 
 // Salva alterações de perfil ao sair do campo
@@ -745,8 +747,8 @@ function renderizarConquistas(conquistas) {
   const pct         = total ? Math.round((desbloqueadas / total) * 100) : 0;
 
   // Atualiza barra de progresso geral
-  const progBar  = document.querySelector('#page-conquistas .xp-fill');
-  const progPct  = document.querySelector('#page-conquistas .xp-bar + span, #page-conquistas [data-pct]');
+  const progBar  = document.getElementById('conquistas-fill') || document.querySelector('#page-conquistas .xp-fill');
+  const progPct  = document.getElementById('conquistas-pct');
   if (progBar)  progBar.style.width = pct + '%';
   if (progPct)  progPct.textContent = pct + '%';
 
@@ -1117,6 +1119,41 @@ setTimeout(() => {
 // ─────────────────────────────────────────────
 let difAtual = 'medio';
 let categoriaAtual = 1;
+
+
+// ─────────────────────────────────────────────
+// CATEGORIA — modal nova tarefa
+// ─────────────────────────────────────────────
+function toggleCatDropdown() {
+  const list = document.getElementById('cat-list');
+  if (!list) return;
+  list.style.display = list.style.display === 'none' ? 'block' : 'none';
+}
+
+function selectCat(nome) {
+  const texto = document.getElementById('cat-selected-text');
+  if (texto) texto.textContent = nome;
+  const list = document.getElementById('cat-list');
+  if (list) list.style.display = 'none';
+  const mapa = {
+    '📘 Desenvolvimento Pessoal': 1,
+    '💼 Trabalho': 2,
+    '📚 Estudo': 3,
+    '💪 Saúde & Fitness': 4,
+    '💰 Finanças': 5,
+    '🏠 Casa & Rotina': 6,
+  };
+  categoriaAtual = mapa[nome] || 1;
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('cat-dropdown');
+  const list = document.getElementById('cat-list');
+  if (dd && list && !dd.contains(e.target)) {
+    list.style.display = 'none';
+  }
+});
 
 function selecionarDif(dif) { setDif(null, dif); }
 
