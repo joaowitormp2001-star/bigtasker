@@ -471,7 +471,10 @@ function renderizarKanban(tarefas) {
     card.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div class="badge-cat">${t.categoria_icone || '📌'} ${t.categoria_nome || 'Geral'}</div>
-        ${atrasada ? '<span class="badge badge-atrasada">ATRASADA</span>' : ''}
+        <div style="display:flex;align-items:center;gap:4px;">
+          ${atrasada ? '<span class="badge badge-atrasada">ATRASADA</span>' : ''}
+          <button onclick="event.stopPropagation();excluirTarefa(${t.id})" style="background:none;border:none;color:#475569;cursor:pointer;font-size:13px;padding:2px 4px;line-height:1;border-radius:4px;" title="Excluir">🗑</button>
+        </div>
       </div>
       <div style="font-size:13px;font-weight:600;margin-bottom:8px;">${t.titulo}</div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -511,13 +514,13 @@ function abrirTarefaById(t) {
 
   const acaoEl = document.getElementById('mt-acao');
   if (acaoEl) {
+    let btns = `<button onclick="excluirTarefa(${t.id})" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(239,68,68,0.4);color:#f87171;background:transparent;font-size:13px;font-weight:600;cursor:pointer;margin-right:auto;">🗑 Excluir</button>`;
     if (t.status === 'concluida') {
-      acaoEl.innerHTML = `<button class="btn-primary" onclick="fecharModal('modal-tarefa');abrirEditor(${t.id})">Postar</button>`;
-    } else if (t.status !== 'concluida' && !atrasada) {
-      acaoEl.innerHTML = `<button class="btn-green" onclick="concluirTarefa(${t.id})">Concluir tarefa ✓</button>`;
-    } else {
-      acaoEl.innerHTML = '';
+      btns += `<button class="btn-primary" onclick="fecharModal('modal-tarefa');abrirEditor(${t.id})">Postar</button>`;
+    } else if (!atrasada) {
+      btns += `<button class="btn-green" onclick="concluirTarefa(${t.id})">Concluir tarefa ✓</button>`;
     }
+    acaoEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;width:100%;">${btns}</div>`;
   }
 
   document.getElementById('modal-tarefa').classList.add('open');
@@ -525,6 +528,22 @@ function abrirTarefaById(t) {
 
 // Mantém compatibilidade com chamadas antigas inline no HTML
 function abrirTarefa(t) { abrirTarefaById(t); }
+
+
+// ─────────────────────────────────────────────
+// EXCLUIR TAREFA
+// ─────────────────────────────────────────────
+async function excluirTarefa(id) {
+  if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
+  const { ok } = await apiFetch(`/tarefas/${id}`, 'DELETE');
+  if (ok) {
+    fecharModal('modal-tarefa');
+    mostrarToast('Tarefa excluída');
+    await carregarTarefas();
+  } else {
+    mostrarToast('Erro ao excluir tarefa', true);
+  }
+}
 
 async function concluirTarefa(id) {
   const { ok, data } = await apiFetch(`/tarefas/${id}/concluir`, 'POST');
@@ -603,6 +622,7 @@ function iniciarSortable() {
       animation: 150,
       handle: '.task-card',
       filter: '.kanban-header',
+      preventOnFilter: true,
       ghostClass: 'opacity-50',
       onAdd: async (evt) => {
         const card   = evt.item;
@@ -1027,6 +1047,44 @@ async function abrirModalPostar() {
     </div>`;
   }).join('');
 }
+
+// ─────────────────────────────────────────────
+// PUBLICAR POST — editor de mídia
+// ─────────────────────────────────────────────
+async function publicarPost() {
+  const modal = document.getElementById('modal-editor');
+  const tarefaId = modal?.getAttribute('data-tarefa');
+  const legenda  = document.getElementById('editor-legenda')?.value || '';
+  const previewImg = document.getElementById('preview-media')?.querySelector('img');
+  const url_imagem = previewImg?.src && previewImg.src.startsWith('data:') ? previewImg.src : '';
+
+  if (!tarefaId) { mostrarToast('Nenhuma tarefa selecionada', true); return; }
+
+  const btnPostar = modal?.querySelector('.btn-primary');
+  if (btnPostar) { btnPostar.textContent = 'Publicando...'; btnPostar.disabled = true; }
+
+  const { ok, data } = await apiFetch('/feed', 'POST', {
+    id_tarefa: parseInt(tarefaId),
+    url_imagem,
+    legenda,
+  });
+
+  if (btnPostar) { btnPostar.textContent = 'Postar'; btnPostar.disabled = false; }
+
+  if (ok) {
+    fecharModal('modal-editor');
+    fecharModal('modal-postar');
+    mostrarToast('Postagem publicada! 🎉');
+    // Atualiza cache da tarefa para mostrar "Ver post" em vez de "Postar"
+    const idx = tarefasCache.findIndex(t => t.id === parseInt(tarefaId));
+    if (idx !== -1) tarefasCache[idx].tem_post = true;
+    await Promise.all([carregarTarefas(), carregarFeed()]);
+    navTo('dashboard');
+  } else {
+    mostrarToast(data.mensagem || 'Erro ao publicar', true);
+  }
+}
+
 function abrirEditor(tarefaId) {
   fecharModal('modal-postar');
   if (tarefaId) document.getElementById('modal-editor')?.setAttribute('data-tarefa', tarefaId);
