@@ -859,13 +859,13 @@ function descartarAlerta(id) {
   pendenciasCount = Math.max(0, pendenciasCount - 1);
   const el = document.getElementById('pendencias-num');
   if (el) el.textContent = pendenciasCount;
-  apiFetch(\`/admin/alertas/\${id}/descartar\`, 'POST');
+  apiFetch(`/admin/alertas/${id}/descartar`, 'POST');
 }
 
 async function penalizarUsuario(idAlerta, idUsuario) {
   const motivo = prompt('Motivo da penalidade (ex: "Fraude detectada"):');
   if (!motivo) return;
-  const { ok, data } = await apiFetch(\`/admin/alertas/\${idAlerta}/penalizar\`, 'POST', {
+  const { ok, data } = await apiFetch(`/admin/alertas/${idAlerta}/penalizar`, 'POST', {
     id_usuario: idUsuario, motivo
   });
   if (ok) {
@@ -936,7 +936,7 @@ async function abrirModalPostar() {
     const prazo = t.prazo ? t.prazo.substring(5,10).split('-').reverse().join('/') : '—';
     const xp = t.xp_final || calcularXP(t.dificuldade, score, false, t.esta_atrasada);
     const difLabel = {facil:'Fácil',medio:'Médio',dificil:'Difícil'}[t.dificuldade] || t.dificuldade;
-    return \`<div style="margin-bottom:14px;">
+    return `<div style="margin-bottom:14px;">
       <div class="badge-cat" style="margin-bottom:8px;">\${t.categoria_icone||'📌'} \${t.categoria_nome||'Geral'}</div>
       <div style="background:#161b27;border:1px solid #2a3347;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;">
         <div style="flex:1;">
@@ -949,7 +949,7 @@ async function abrirModalPostar() {
         </div>
         <button class="btn-primary" onclick="fecharModal('modal-postar');abrirEditor(\${t.id})" style="font-size:12px;padding:8px 16px;">Postar</button>
       </div>
-    </div>\`;
+    </div>`;
   }).join('');
 }
 function abrirEditor(tarefaId) {
