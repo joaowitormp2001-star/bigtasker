@@ -87,7 +87,8 @@ h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
 @keyframes modalIn{from{opacity:0;transform:scale(0.96) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
 
 /* INPUTS */
-.bt-input{background:#0d1117;border:1px solid #2a3347;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-family:'Inter',sans-serif;font-size:14px;width:100%;outline:none;transition:border-color 0.2s;}
+input[type="date"]{color-scheme:dark;color:#fff;}
+    .bt-input{background:#0d1117;border:1px solid #2a3347;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-family:'Inter',sans-serif;font-size:14px;width:100%;outline:none;transition:border-color 0.2s;}
 .bt-input:focus{border-color:#7c3aed;}
 .bt-input::placeholder{color:#475569;}
 .bt-input-pill{border-radius:100px !important;}
@@ -327,23 +328,23 @@ h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;">
           <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;">
             <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Tarefas concluídas</div>
-            <div style="font-size:26px;font-weight:800;font-family:'Sora';">2</div>
+            <div id="dash-concluidas" style="font-size:26px;font-weight:800;font-family:'Sora';">0</div>
           </div>
           <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;">
             <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Pontuação total</div>
-            <div style="font-size:26px;font-weight:800;font-family:'Sora';">6715 <span style="font-size:14px;color:#7c3aed;">XP</span></div>
+            <div id="dash-xp-total" style="font-size:26px;font-weight:800;font-family:'Sora';">0 <span style="font-size:14px;color:#7c3aed;">XP</span></div>
           </div>
           <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;">
             <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Pontuação semanal</div>
-            <div style="font-size:26px;font-weight:800;font-family:'Sora';">890 <span style="font-size:14px;color:#7c3aed;">XP</span></div>
+            <div id="dash-xp-semanal" style="font-size:26px;font-weight:800;font-family:'Sora';">0 <span style="font-size:14px;color:#7c3aed;">XP</span></div>
           </div>
           <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;">
             <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Ranking</div>
-            <div style="font-size:26px;font-weight:800;font-family:'Sora';">37º</div>
+            <div id="dash-ranking" style="font-size:26px;font-weight:800;font-family:'Sora';">—</div>
           </div>
           <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:16px;border-color:rgba(124,58,237,0.35);">
             <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Score obtido hoje</div>
-            <div style="font-size:26px;font-weight:800;font-family:'Sora';color:#7c3aed;">+0.7<span style="font-size:14px;">%</span></div>
+            <div id="dash-score" style="font-size:26px;font-weight:800;font-family:'Sora';color:#7c3aed;">60<span style="font-size:14px;">%</span></div>
           </div>
         </div>
         <div id="private-feed-notice" style="display:none;" class="private-notice">Não é possível reagir aos posts com perfil privado, mas você pode visualizá-los.</div>
@@ -362,28 +363,7 @@ h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
         <!-- Tarefas -->
         <div class="tasks-col">
           <h2 style="font-size:16px;font-weight:700;margin-bottom:14px;">Suas tarefas</h2>
-          <div class="tasks-inner">
-            <div class="task-card" onclick="abrirTarefa({titulo:'Entregar ata de preços',cat:'💼 Trabalho',prazo:'22/05',dif:'dificil',xp:0,atrasada:true})" style="border-color:rgba(239,68,68,0.3);">
-              <div class="badge-cat" style="margin-bottom:8px;">💼 Trabalho</div>
-              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Entregar ata de preços</div>
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 22/05</span><span class="badge badge-atrasada">ATRASADA</span><span class="badge badge-dificil">Difícil</span><span style="margin-left:auto;font-size:11px;color:#64748b;font-weight:600;">+0 XP</span></div>
-            </div>
-            <div class="task-card" onclick="abrirTarefa({titulo:'Treinar à noite + pós treino',cat:'💪 Saúde & Fitness',prazo:'04/06',dif:'medio',xp:24})">
-              <div class="badge-cat" style="margin-bottom:8px;">💪 Saúde & Fitness</div>
-              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Treinar à noite + pós treino</div>
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 04/06</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div>
-            </div>
-            <div class="task-card" onclick="abrirTarefa({titulo:'Estudar inglês e praticar',cat:'📘 Desenvolvimento Pessoal',prazo:'05/06',dif:'medio',xp:24})">
-              <div class="badge-cat" style="margin-bottom:8px;">📘 Desenvolvimento Pessoal</div>
-              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Estudar inglês e praticar</div>
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 05/06</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div>
-            </div>
-            <div class="task-card" onclick="abrirTarefa({titulo:'Registrar últimos gastos',cat:'💰 Finanças',prazo:'07/06',dif:'facil',xp:9.6})">
-              <div class="badge-cat" style="margin-bottom:8px;">💰 Finanças</div>
-              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Registrar últimos gastos</div>
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 07/06</span><span class="badge badge-facil">Fácil</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+9.6 XP</span></div>
-            </div>
-          </div>
+          <div class="tasks-inner" id="dash-tasks-inner"><p style="color:#64748b;font-size:13px;text-align:center;padding:20px;">Carregando tarefas...</p></div>
           <button onclick="navTo('tarefas')" style="margin-top:12px;width:100%;padding:10px;border-radius:8px;border:1px solid #7c3aed;color:#c4b5fd;font-family:'Sora';font-weight:600;font-size:13px;background:transparent;cursor:pointer;">Ver todas as tarefas</button>
         </div>
       </div>
@@ -397,19 +377,13 @@ h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
       </div>
       <div style="display:flex;gap:12px;flex:1;overflow:hidden;">
         <div class="kanban-col" id="col-afazer">
-          <div class="kanban-header">A fazer</div>
-          <div class="task-card" onclick="abrirTarefa({titulo:'Treinar à noite + pós treino',cat:'💪 Saúde & Fitness',prazo:'04/06',dif:'medio',xp:24,status:'afazer'})"><div class="badge-cat" style="margin-bottom:8px;">💪 Saúde & Fitness</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Treinar à noite + pós treino</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 04/06</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div></div>
-          <div class="task-card" onclick="abrirTarefa({titulo:'Estudar inglês e praticar',cat:'📘 Desenvolvimento Pessoal',prazo:'05/06',dif:'medio',xp:24,status:'afazer'})"><div class="badge-cat" style="margin-bottom:8px;">📘 Desenvolvimento Pessoal</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Estudar inglês e praticar</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 05/06</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div></div>
-          <div class="task-card" onclick="abrirTarefa({titulo:'Registrar últimos gastos',cat:'💰 Finanças',prazo:'07/06',dif:'facil',xp:9.6,status:'afazer'})"><div class="badge-cat" style="margin-bottom:8px;">💰 Finanças</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Registrar últimos gastos</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:11px;color:#64748b;">⏱ 07/06</span><span class="badge badge-facil">Fácil</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+9.6 XP</span></div></div>
+          <div class="kanban-header" style="pointer-events:none;user-select:none;">A fazer</div>
         </div>
         <div class="kanban-col" id="col-fazendo">
-          <div class="kanban-header">Fazendo</div>
-          <div class="task-card" onclick="abrirTarefa({titulo:'Entregar ata de preços',cat:'💼 Trabalho',prazo:'22/05',dif:'dificil',xp:0,atrasada:true,status:'fazendo'})" style="border-color:rgba(239,68,68,0.3);"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><div class="badge-cat">💼 Trabalho</div><span class="badge badge-atrasada">ATRASADA</span></div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Entregar ata de preços</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 22/05</span><span class="badge badge-dificil">Difícil</span><span style="margin-left:auto;font-size:11px;color:#64748b;font-weight:600;">+0 XP</span></div></div>
+          <div class="kanban-header" style="pointer-events:none;user-select:none;">Fazendo</div>
         </div>
         <div class="kanban-col" id="col-concluido">
-          <div class="kanban-header">Concluído</div>
-          <div class="task-card" onclick="abrirTarefa({titulo:'Arrumar a casa toda',cat:'🏠 Casa & Rotina',prazo:'22/05',dif:'dificil',xp:48,status:'concluido',temPost:true})"><div class="badge-cat" style="margin-bottom:8px;">🏠 Casa & Rotina</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Arrumar a casa toda</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 22/05</span><span class="badge badge-dificil">Difícil</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+48 XP</span></div></div>
-          <div class="task-card" onclick="abrirTarefa({titulo:'Revisar conteúdo de UX design da faculdade',cat:'📚 Estudo',prazo:'23/05',dif:'medio',xp:24,status:'concluido',temPost:false})"><div class="badge-cat" style="margin-bottom:8px;">📚 Estudo</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Revisar conteúdo de UX design</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 23/05</span><span class="badge badge-medio">Médio</span><span style="margin-left:auto;font-size:11px;color:#22c55e;font-weight:600;">+24 XP</span></div></div>
+          <div class="kanban-header" style="pointer-events:none;user-select:none;">Concluído</div>
         </div>
       </div>
     </div>
@@ -432,18 +406,18 @@ h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
             </div>
             <div style="flex:1;min-width:0;padding-top:8px;">
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
-                <span style="font-size:17px;font-weight:700;font-family:'Sora';">@joao.witor</span>
-                <span style="background:#7c3aed;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;">adm</span>
+                <span id="perfil-nome" style="font-size:17px;font-weight:700;font-family:'Sora';">@joao.witor</span>
+                <span id="perfil-adm-badge" style="background:#7c3aed;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;">adm</span>
                 <span class="score-badge" style="margin-left:auto;" id="meu-score-badge">SCORE 84%</span>
               </div>
-              <span class="nivel-tag nivel-ouro">✦ Tasker Ouro</span>
+              <span id="perfil-nivel-tag" class="nivel-tag nivel-bronze">✦ Tasker Bronze</span>
               <div style="margin-top:10px;">
-                <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:6px;"><span>3.501 XP</span><span>14.000 XP → Tasker Platina</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:6px;"><span id="perfil-xp-min">0 XP</span><span id="perfil-xp-max">500 XP → Tasker Prata</span></div>
                 <div style="position:relative;">
-                  <div class="xp-bar"><div class="xp-fill" style="width:47%;"></div></div>
-                  <div style="position:absolute;bottom:-18px;left:47%;transform:translateX(-50%);text-align:center;">
+                  <div class="xp-bar"><div id="perfil-xp-fill" class="xp-fill" style="width:0%;"></div></div>
+                  <div style="position:absolute;bottom:-18px;left:0%;transform:translateX(-50%);text-align:center;">
                     <div style="width:2px;height:6px;background:#c4b5fd;margin:0 auto 1px;"></div>
-                    <span style="font-size:10px;color:#c4b5fd;font-weight:700;white-space:nowrap;">6.715 XP</span>
+                    <span id="perfil-xp-valor" style="font-size:10px;color:#c4b5fd;font-weight:700;white-space:nowrap;">0 XP</span>
                   </div>
                 </div>
                 <div style="margin-top:24px;"></div>
@@ -466,7 +440,7 @@ h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
     <div id="page-ranking" class="page" style="overflow-y:auto;height:100%;padding:28px 32px;flex-direction:column;display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
         <h1 style="font-size:28px;font-weight:800;">Ranking</h1>
-        <span style="background:#1c2333;border:1px solid #2a3347;border-radius:100px;padding:6px 16px;font-size:13px;font-weight:600;color:#7c3aed;">Termina em 2d 12h 23min</span>
+        <span style="background:#1c2333;border:1px solid #2a3347;border-radius:100px;padding:6px 16px;font-size:13px;font-weight:600;color:#7c3aed;"><span id="ranking-timer">Termina em 2d 12h 23min</span></span>
       </div>
       <div id="private-ranking-notice" style="display:none;" class="private-notice">Não é possível participar do ranking com perfil privado.</div>
       <!-- Podium -->
@@ -543,24 +517,13 @@ h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
     <div id="page-painel-adm" class="page page-scroll">
       <h1 style="font-size:28px;font-weight:800;margin-bottom:20px;">Painel Adm</h1>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
-        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Usuários ativos</div><div style="font-size:26px;font-weight:800;font-family:'Sora';">353</div></div>
-        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Novos cadastros hoje</div><div style="font-size:26px;font-weight:800;font-family:'Sora';">17</div></div>
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Usuários ativos</div><div id="adm-usuarios" style="font-size:26px;font-weight:800;font-family:'Sora';">—</div></div>
+        <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Novos cadastros hoje</div><div id="adm-novos" style="font-size:26px;font-weight:800;font-family:'Sora';">—</div></div>
         <div style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:18px;"><div style="font-size:11px;color:#64748b;margin-bottom:4px;">Pendências</div><div style="display:flex;align-items:center;gap:10px;"><span id="pendencias-num" style="font-size:26px;font-weight:800;font-family:'Sora';">1</span><span id="pendencias-icon"><span style="background:#f59e0b;color:#000;width:26px;height:26px;border-radius:100px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;">!</span></span></div></div>
       </div>
       <div style="background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;">
         <div style="display:grid;grid-template-columns:70px 1fr 120px 1fr;padding:10px 20px;background:#161b27;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;"><span>ID</span><span>Usuário</span><span>Tarefas/10min</span><span>Ação</span></div>
-        <div id="adm-rows">
-          <div id="adm-row-123" style="display:grid;grid-template-columns:70px 1fr 120px 1fr;padding:14px 20px;border-top:1px solid #2a3347;align-items:center;transition:all 0.4s;">
-            <span style="font-size:13px;color:#64748b;">#123</span>
-            <div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:100px;background:#2a3347;"></div><span style="font-size:13px;font-weight:600;">@usuario_</span><span id="penalidade-tag" style="display:none;"></span></div>
-            <span style="font-size:14px;font-weight:700;color:#f87171;">14</span>
-            <div id="adm-acoes" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <button id="btn-penalizar" onclick="iniciarPenalidade()" style="padding:6px 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Penalizar</button>
-              <button id="btn-descartar" onclick="descartarRow()" style="padding:6px 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Descartar</button>
-              <button id="btn-historico" onclick="navTo('historico-adm')" style="padding:6px 14px;border-radius:8px;border:1px solid #7c3aed;color:#c4b5fd;font-size:12px;font-weight:600;background:transparent;cursor:pointer;">Ver histórico</button>
-            </div>
-          </div>
-        </div>
+        <div id="adm-rows"><p style="color:#64748b;font-size:13px;text-align:center;padding:24px;">Carregando alertas...</p></div>
       </div>
     </div>
 
@@ -644,51 +607,11 @@ h1,h2,h3,h4,h5,.sora{font-family:'Sora',sans-serif;}
 
 <!-- Modal Tarefas Concluídas -->
 <div id="modal-postar" class="modal-overlay">
-  <div class="modal-box" style="max-width:660px;">
+  <div class="modal-box" style="max-width:660px;max-height:80vh;overflow-y:auto;">
     <span onclick="fecharModal('modal-postar')" style="color:#7c3aed;cursor:pointer;font-weight:600;font-size:14px;display:inline-block;margin-bottom:16px;">← Voltar</span>
     <h2 style="font-size:19px;font-weight:700;margin-bottom:6px;">Tarefas concluídas</h2>
     <div style="height:1px;background:#2a3347;margin-bottom:18px;"></div>
-
-    <!-- Tarefa 1: tem post -->
-    <div style="margin-bottom:16px;">
-      <div class="badge-cat" style="margin-bottom:8px;">🏠 Casa & Rotina</div>
-      <div style="background:#161b27;border:1px solid #2a3347;border-radius:12px;padding:14px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:0;" id="tarefa1-header">
-          <div style="flex:1;"><div style="font-size:13px;font-weight:600;margin-bottom:5px;">Arrumar a casa toda</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 22/05</span><span class="badge badge-dificil">Difícil</span><span style="font-size:11px;color:#22c55e;font-weight:600;">+56 XP</span></div></div>
-          <button onclick="togglePostInline(this)" style="padding:7px 14px;border-radius:8px;border:1px solid #64748b;color:#94a3b8;font-size:12px;font-weight:600;background:transparent;cursor:pointer;white-space:nowrap;">Ver post</button>
-        </div>
-        <!-- Post inline -->
-        <div id="post-inline" style="display:none;margin-top:14px;border-top:1px solid #2a3347;padding-top:14px;">
-          <div style="background:#1c2333;border-radius:12px;overflow:hidden;max-width:340px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
-              <div style="display:flex;align-items:center;gap:7px;"><div style="width:26px;height:26px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">JW</div><span style="font-size:12px;font-weight:600;">joao.witor</span></div>
-              <span class="score-badge" style="font-size:10px;">84%</span>
-            </div>
-            <div style="position:relative;height:180px;background:linear-gradient(135deg,#1e3a5f,#1a2744);display:flex;align-items:center;justify-content:center;">
-              <span style="font-size:40px;">🏠</span>
-              <div style="position:absolute;bottom:8px;left:8px;right:8px;"><div style="margin-bottom:3px;"><span class="badge-cat" style="font-size:9px;padding:2px 7px;">🏠 Casa & Rotina</span></div><div style="background:rgba(0,0,0,0.75);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;">Arrumar a casa toda <span class="badge badge-dificil" style="font-size:9px;padding:1px 6px;margin-left:4px;">Difícil</span></div></div>
-            </div>
-            <div style="padding:10px 12px;">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                <button class="react-btn like" onclick="reagir(this,1)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg><span>12</span></button>
-                <button class="react-btn dislike" onclick="reagir(this,-1)"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg><span>2</span></button>
-                <button class="react-btn heart" onclick="reagirCoracao(this)" style="margin-left:auto;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>1</span></button>
-              </div>
-              <p style="font-size:12px;color:#94a3b8;">2h30 de trabalho</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tarefa 2: sem post -->
-    <div style="margin-bottom:14px;">
-      <div class="badge-cat" style="margin-bottom:8px;">📚 Estudos</div>
-      <div style="background:#161b27;border:1px solid #2a3347;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;">
-        <div style="flex:1;"><div style="font-size:13px;font-weight:600;margin-bottom:5px;">Revisar conteúdo de UX design da faculdade</div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:#64748b;">⏱ 23/05</span><span class="badge badge-medio">Médio</span><span style="font-size:11px;color:#22c55e;font-weight:600;">+28 XP</span></div></div>
-        <button class="btn-primary" onclick="abrirEditor()" style="font-size:12px;padding:8px 16px;">Postar</button>
-      </div>
-    </div>
+    <div id="modal-postar-lista"><p style="color:#64748b;font-size:13px;text-align:center;padding:20px;">Carregando...</p></div>
   </div>
 </div>
 

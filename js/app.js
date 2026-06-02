@@ -364,18 +364,24 @@ async function atualizarMeuPerfil() {
 }
 
 function atualizarDashboard(u) {
-  // Tarefas concluídas
   const concluidas = tarefasCache.filter(t => t.status === 'concluida').length;
-  const elConc = document.querySelector('#page-dashboard [data-metric="concluidas"]');
+  const elConc = document.getElementById('dash-concluidas');
   if (elConc) elConc.textContent = concluidas;
 
-  // XP total
-  const elXP = document.querySelector('#page-dashboard [data-metric="xp-total"]');
-  if (elXP) elXP.innerHTML = (u.xp_total || 0) + ' <span style="font-size:14px;color:#7c3aed;">XP</span>';
+  const xp = u.xp_total || 0;
+  const elXP = document.getElementById('dash-xp-total');
+  if (elXP) elXP.innerHTML = xp.toLocaleString() + ' <span style="font-size:14px;color:#7c3aed;">XP</span>';
 
-  // Score
-  const elScore = document.querySelector('#page-dashboard [data-metric="score"]');
-  if (elScore) elScore.innerHTML = '+' + ((u.score || 60) - 60).toFixed(1) + '<span style="font-size:14px;">%</span>';
+  // XP semanal — soma transações dos últimos 7 dias (backend não tem endpoint, calcula do cache)
+  const elSemanal = document.getElementById('dash-xp-semanal');
+  if (elSemanal) elSemanal.innerHTML = '— <span style="font-size:14px;color:#7c3aed;">XP</span>';
+
+  const elScore = document.getElementById('dash-score');
+  if (elScore) elScore.innerHTML = (u.score || 60) + '<span style="font-size:14px;">%</span>';
+
+  // Ranking — pega posição do usuário no ranking carregado
+  const elRank = document.getElementById('dash-ranking');
+  if (elRank) elRank.textContent = u.posicao_ranking ? u.posicao_ranking + 'º' : '—';
 }
 
 // ─────────────────────────────────────────────
@@ -527,7 +533,7 @@ async function concluirTarefa(id) {
 
 // Nova tarefa
 async function criarTarefa() {
-  const titulo = document.getElementById('nova-titulo')?.value?.trim();
+  const titulo     = document.getElementById('nt-titulo')?.value?.trim();
   const descricao  = document.getElementById('nt-descricao')?.value?.trim();
   const prazo      = document.getElementById('nt-prazo')?.value;
   const dificuldade = difAtual || 'medio';
@@ -565,7 +571,7 @@ function iniciarSortable() {
       group: 'kanban',
       animation: 150,
       handle: '.task-card',
-       filter: '.kanban-header',
+      filter: '.kanban-header',
       ghostClass: 'opacity-50',
       onAdd: async (evt) => {
         const card   = evt.item;
@@ -701,16 +707,6 @@ async function carregarConquistas() {
   renderizarConquistasPerfil(data);
 }
 
-function nomeArquivo(nome) {
-  return nome
-    .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\(([a-z])\)/g, '-$1')  // (a) → -a
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
-}
-
 function renderizarConquistas(conquistas) {
   const grid = document.getElementById('conquistas-grid');
   if (!grid) return;
@@ -727,11 +723,11 @@ function renderizarConquistas(conquistas) {
 
   grid.innerHTML = conquistas.map(c => `
     <div class="conquista-card ${c.desbloqueada ? 'unlocked' : ''}">
-      <img class="conquista-img ${c.desbloqueada ? '' : 'locked'}" src="assets/${nomeArquivo(c.nome)}.png" alt="${c.nome}" onerror="this.style.display='none'">
+      <img class="conquista-img ${c.desbloqueada ? '' : 'locked'}" src="assets/${c.tipo}-${c.id}.png" alt="${c.nome}" onerror="this.style.display='none'">
       <div style="font-size:13px;font-weight:700;font-family:'Sora';">${c.nome}</div>
       <div style="font-size:11px;color:#64748b;text-align:center;">${c.descricao}</div>
       <span class="xp-tag-c ${c.desbloqueada ? 'unlocked' : 'locked'}">+${c.xp_de_resgate} XP</span>
-      ${!c.desbloqueada ? `<div class="prog-bar"><div class="prog-fill" style="width:${c.progresso || 0}%;"></div></div>` : ''}
+      ${!c.desbloqueada ? `<div class="prog-bar" style="margin-top:6px;background:#2a3347;border-radius:100px;height:4px;overflow:hidden;"><div class="prog-fill" style="width:0%;height:100%;background:#7c3aed;border-radius:100px;"></div></div>` : ''}
     </div>
   `).join('');
 }
@@ -742,8 +738,7 @@ function renderizarConquistasPerfil(conquistas) {
   const desbloqueadas = conquistas.filter(c => c.desbloqueada).slice(0, 8);
   container.innerHTML = desbloqueadas.map(c => `
     <div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:50px;text-align:center;">
-      src="assets/${nomeArquivo(c.nome)}.png"
- alt="${c.nome}" style="width:42px;height:42px;object-fit:contain;" onerror="this.style.display='none'">
+      <img src="assets/${c.tipo}-${c.id}.png" alt="${c.nome}" style="width:42px;height:42px;object-fit:contain;" onerror="this.style.display='none'">
       <span style="font-size:9px;color:#94a3b8;line-height:1.3;">${c.nome}</span>
     </div>
   `).join('');
@@ -818,13 +813,14 @@ async function carregarPainelAdm() {
   const { ok, data } = await apiFetch('/admin/metricas');
   if (!ok) return;
 
-  const elAtivos  = document.querySelector('#page-painel-adm [data-adm="usuarios"]');
-  const elNovos   = document.querySelector('#page-painel-adm [data-adm="novos"]');
+  const elAtivos  = document.getElementById('adm-usuarios');
+  const elNovos   = document.getElementById('adm-novos');
   const elPend    = document.getElementById('pendencias-num');
 
   if (elAtivos)  elAtivos.textContent  = data.usuarios_ativos;
   if (elNovos)   elNovos.textContent   = data.novos_hoje;
   if (elPend)    elPend.textContent    = data.pendencias;
+  pendenciasCount = data.pendencias || 0;
 
   await carregarAlertasAdm();
 }
@@ -848,8 +844,10 @@ async function carregarAlertasAdm() {
         <span style="font-size:13px;font-weight:600;">@${a.usuario_nome}</span>
       </div>
       <span style="font-size:14px;font-weight:700;color:#f87171;">${a.quantia_tarefas_suspeitas}</span>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button onclick="penalizarUsuario(${a.id},${a.id_usuario})" style="padding:6px 14px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Penalizar</button>
         <button onclick="descartarAlerta(${a.id})" style="padding:6px 14px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Descartar</button>
+        <button onclick="navTo('historico-adm')" style="padding:6px 14px;border-radius:8px;border:1px solid #7c3aed;color:#c4b5fd;font-size:12px;font-weight:600;background:transparent;cursor:pointer;">Ver histórico</button>
       </div>
     </div>
   `).join('');
@@ -861,6 +859,21 @@ function descartarAlerta(id) {
   pendenciasCount = Math.max(0, pendenciasCount - 1);
   const el = document.getElementById('pendencias-num');
   if (el) el.textContent = pendenciasCount;
+  apiFetch(\`/admin/alertas/\${id}/descartar\`, 'POST');
+}
+
+async function penalizarUsuario(idAlerta, idUsuario) {
+  const motivo = prompt('Motivo da penalidade (ex: "Fraude detectada"):');
+  if (!motivo) return;
+  const { ok, data } = await apiFetch(\`/admin/alertas/\${idAlerta}/penalizar\`, 'POST', {
+    id_usuario: idUsuario, motivo
+  });
+  if (ok) {
+    mostrarToast('Penalidade aplicada ✓');
+    descartarAlerta(idAlerta);
+  } else {
+    mostrarToast(data.mensagem || 'Erro ao penalizar', true);
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -908,7 +921,37 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
 });
 
 function abrirModalNovaTarefa() { document.getElementById('modal-nova-tarefa')?.classList.add('open'); }
-function abrirModalPostar()     { document.getElementById('modal-postar')?.classList.add('open'); }
+async function abrirModalPostar() {
+  document.getElementById('modal-postar')?.classList.add('open');
+  const lista = document.getElementById('modal-postar-lista');
+  if (!lista) return;
+  const concluidas = tarefasCache.filter(t => t.status === 'concluida');
+  if (concluidas.length === 0) {
+    lista.innerHTML = '<p style="color:#64748b;font-size:13px;text-align:center;padding:20px;">Nenhuma tarefa concluída ainda.</p>';
+    return;
+  }
+  const u = usuarioAtual || {};
+  const score = u.score || 60;
+  lista.innerHTML = concluidas.map(t => {
+    const prazo = t.prazo ? t.prazo.substring(5,10).split('-').reverse().join('/') : '—';
+    const xp = t.xp_final || calcularXP(t.dificuldade, score, false, t.esta_atrasada);
+    const difLabel = {facil:'Fácil',medio:'Médio',dificil:'Difícil'}[t.dificuldade] || t.dificuldade;
+    return \`<div style="margin-bottom:14px;">
+      <div class="badge-cat" style="margin-bottom:8px;">\${t.categoria_icone||'📌'} \${t.categoria_nome||'Geral'}</div>
+      <div style="background:#161b27;border:1px solid #2a3347;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:5px;">\${t.titulo}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#64748b;">⏱ \${prazo}</span>
+            <span class="badge badge-\${t.dificuldade}">\${difLabel}</span>
+            <span style="font-size:11px;color:#22c55e;font-weight:600;">+\${xp} XP</span>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="fecharModal('modal-postar');abrirEditor(\${t.id})" style="font-size:12px;padding:8px 16px;">Postar</button>
+      </div>
+    </div>\`;
+  }).join('');
+}
 function abrirEditor(tarefaId) {
   fecharModal('modal-postar');
   if (tarefaId) document.getElementById('modal-editor')?.setAttribute('data-tarefa', tarefaId);
@@ -1081,42 +1124,6 @@ function excluirAvatar() {
   if (av) av.innerHTML = getIniciais(u.nome || 'JW');
   const btnDel = document.getElementById('btn-del-avatar');
   if (btnDel) btnDel.style.display = 'none';
-}
-
-// ─────────────────────────────────────────────
-// MODAL NOVA TAREFA — funções do HTML
-// ─────────────────────────────────────────────
-function toggleCatDropdown() {
-  const list = document.getElementById('cat-list');
-  if (list) list.style.display = list.style.display === 'none' ? 'block' : 'none';
-}
-
-function selectCat(nome) {
-  const texto = document.getElementById('cat-selected-text');
-  if (texto) texto.textContent = nome;
-  const list = document.getElementById('cat-list');
-  if (list) list.style.display = 'none';
-  // Mapeia nome para id (ajuste conforme suas categorias no banco)
-  const mapa = {
-    '📘 Desenvolvimento Pessoal': 1,
-    '💼 Trabalho': 2,
-    '📚 Estudo': 3,
-    '💪 Saúde & Fitness': 4,
-    '🏠 Casa & Rotina': 5,
-    '💰 Finanças': 6,
-  };
-  categoriaAtual = mapa[nome] || 1;
-}
-
-function setDif(btn, dif) {
-  difAtual = dif;
-  document.querySelectorAll('.diff-btn').forEach(b => {
-    b.classList.remove('active-facil', 'active-medio', 'active-dificil');
-  });
-  if (btn) btn.classList.add('active-' + dif);
-  const u = usuarioAtual || {};
-  const xpPreview = document.getElementById('nova-xp-pr') || document.getElementById('nt-xp-preview');
-  if (xpPreview) xpPreview.textContent = '+' + calcularXP(dif, u.score || 60) + ' XP';
 }
 
 // ─────────────────────────────────────────────
