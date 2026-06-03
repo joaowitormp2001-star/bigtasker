@@ -102,6 +102,7 @@ def atualizar_ranking(cursor, id_usuario, xp_ganho):
             SET xp_obtido = %s,
                 tarefas_concluidas = %s,
                 participacao_ativa = TRUE,
+                data_atualizacao = NOW()
             WHERE id = %s
             """,
             (novo_xp, novas_tarefas, entry[0])
@@ -111,7 +112,7 @@ def atualizar_ranking(cursor, id_usuario, xp_ganho):
             """
             INSERT INTO ranking
                 (id_usuario, id_competicao, xp_obtido,
-                 tarefas_concluidas, participacao_ativa)
+                 tarefas_concluidas, participacao_ativa, data_atualizacao)
             VALUES (%s, %s, %s, 1, TRUE, NOW())
             """,
             (id_usuario, id_competicao, xp_ganho)
@@ -430,7 +431,7 @@ def cadastro():
                 """
                 INSERT INTO ranking
                     (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                     participacao_ativa, posicao)
+                     participacao_ativa, posicao, data_atualizacao)
                 VALUES (%s, %s, 0, 0, FALSE, NULL, NOW())
                 ON CONFLICT DO NOTHING
                 """,
@@ -983,7 +984,7 @@ def ranking():
             """
             INSERT INTO ranking
                 (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                 participacao_ativa, posicao)
+                 participacao_ativa, posicao, data_atualizacao)
             VALUES (%s, %s, 0, 0, FALSE, NULL, NOW())
             """,
             (id_usuario, id_competicao)
@@ -1558,4 +1559,3 @@ def teste_db():
 # =========================
 if __name__ == "__main__":
     app.run(debug=True)
-# Wed Jun  3 03:29:25 -03 2026
