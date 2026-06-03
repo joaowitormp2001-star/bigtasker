@@ -54,7 +54,7 @@ function getNivelInfo(xp) {
 // CÁLCULO DE XP — tabela de pontuação
 // xp_base: facil=8 | medio=20 | dificil=40
 // modificador score: <50 → ×1.0 | 50-70 → ×1.2 | >70 → ×1.4
-// bônus consistência (+7 dias sem atraso): ×1.2
+// bônus consistência (+7 dias sem atraso): ×1.2 adicional
 // tarefa atrasada: 0 XP
 // ─────────────────────────────────────────────
 const XP_BASE = { facil: 8, medio: 20, dificil: 40 };
@@ -66,6 +66,11 @@ function calcularXP(dificuldade, score, consistente = false, atrasada = false) {
   const modScore = sc < 50 ? 1.0 : sc <= 70 ? 1.2 : 1.4;
   const modConsistencia = consistente ? 1.2 : 1.0;
   return parseFloat((base * modScore * modConsistencia).toFixed(1));
+}
+
+// Retorna o XP exibido para preview (sem consistência — é bônus surpresa)
+function calcularXPPreview(dificuldade, score) {
+  return calcularXP(dificuldade, score, false, false);
 }
 
 function getScoreColor(pct) {
@@ -382,14 +387,17 @@ function atualizarDashboard(u) {
   const elXP = document.getElementById('dash-xp-total');
   if (elXP) elXP.innerHTML = xp.toLocaleString() + ' <span style="font-size:14px;color:#7c3aed;">XP</span>';
 
-  // XP semanal — soma transações dos últimos 7 dias (backend não tem endpoint, calcula do cache)
+  // XP semanal — vem do backend via /usuario/me
   const elSemanal = document.getElementById('dash-xp-semanal');
-  if (elSemanal) elSemanal.innerHTML = '— <span style="font-size:14px;color:#7c3aed;">XP</span>';
+  if (elSemanal) {
+    const xpSem = u.xp_semanal !== undefined ? u.xp_semanal : '—';
+    elSemanal.innerHTML = xpSem + (xpSem !== '—' ? ' <span style="font-size:14px;color:#7c3aed;">XP</span>' : '');
+  }
 
   const elScore = document.getElementById('dash-score');
   if (elScore) elScore.innerHTML = (u.score || 60) + '<span style="font-size:14px;">%</span>';
 
-  // Ranking — pega posição do usuário no ranking carregado
+  // Ranking — posição vem do /usuario/me
   const elRank = document.getElementById('dash-ranking');
   if (elRank) elRank.textContent = u.posicao_ranking ? u.posicao_ranking + 'º' : '—';
 }
@@ -541,12 +549,17 @@ async function concluirTarefa(id) {
   const { ok, data } = await apiFetch(`/tarefas/${id}/concluir`, 'POST');
   fecharModal('modal-tarefa');
   if (ok) {
-    mostrarToast(`+${data.xp_ganho} XP ganhos! 🎉`);
+    const xpGanho = data.xp_ganho || 0;
+    const msg = xpGanho > 0
+      ? `+${xpGanho} XP ganhos! 🎉`
+      : 'Tarefa concluída (sem XP — estava atrasada)';
+    mostrarToast(msg);
     // Atualiza localmente
     const u = JSON.parse(localStorage.getItem('usuario') || '{}');
     u.xp_total = data.xp_total;
+    if (data.score !== undefined) u.score = data.score;
     localStorage.setItem('usuario', JSON.stringify(u));
-    await Promise.all([carregarTarefas(), atualizarMeuPerfil()]);
+    await Promise.all([carregarTarefas(), atualizarMeuPerfil(), carregarRanking(), carregarConquistas()]);
   } else {
     mostrarToast(data.mensagem || 'Erro ao concluir tarefa', true);
   }
@@ -757,7 +770,6 @@ function renderizarConquistas(conquistas) {
   const desbloqueadas = conquistas.filter(c => c.desbloqueada).length;
   const pct         = total ? Math.round((desbloqueadas / total) * 100) : 0;
 
-  // Atualiza barra de progresso geral
   const progBar  = document.getElementById('conquistas-fill') || document.querySelector('#page-conquistas .xp-fill');
   const progPct  = document.getElementById('conquistas-pct');
   if (progBar)  progBar.style.width = pct + '%';
@@ -767,14 +779,21 @@ function renderizarConquistas(conquistas) {
   conquistas.forEach(c => {
     const div = document.createElement('div');
     div.className = 'conquista-card' + (c.desbloqueada ? ' unlocked' : '');
+
+    // Usa campo 'arte' se disponível; senão normaliza o nome
+    const nomeImg = c.arte || nomeArquivo(c.nome);
     const img = document.createElement('img');
     img.className = 'conquista-img' + (c.desbloqueada ? '' : ' locked');
-    img.src = 'assets/' + nomeArquivo(c.nome) + '.png';
+    img.src = 'assets/' + nomeImg + '.png';
     img.alt = c.nome;
     img.style.cssText = 'width:60px;height:60px;object-fit:contain;';
-    img.onerror = function() { this.style.display = 'none'; };
+    img.onerror = function() {
+      // Fallback: emoji por tipo
+      const emojis = { tarefas:'✅', consistencia:'🔥', social:'🌟', score:'💎', ranking:'🏆' };
+      this.outerHTML = `<div style="width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:${c.desbloqueada?1:0.3}">${emojis[c.tipo]||'🎖️'}</div>`;
+    };
     const nome = document.createElement('div');
-    nome.style.cssText = "font-size:13px;font-weight:700;font-family:'Sora';";
+    nome.style.cssText = "font-size:13px;font-weight:700;font-family:'Sora';text-align:center;";
     nome.textContent = c.nome;
     const desc = document.createElement('div');
     desc.style.cssText = 'font-size:11px;color:#64748b;text-align:center;';
@@ -798,12 +817,19 @@ function renderizarConquistasPerfil(conquistas) {
   const container = document.getElementById('perfil-conquistas');
   if (!container) return;
   const desbloqueadas = conquistas.filter(c => c.desbloqueada).slice(0, 8);
-  container.innerHTML = desbloqueadas.map(c => `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:50px;text-align:center;">
-      <img src="assets/${c.tipo}-${c.id}.png" alt="${c.nome}" style="width:42px;height:42px;object-fit:contain;" onerror="this.style.display='none'">
+  if (desbloqueadas.length === 0) {
+    container.innerHTML = '<p style="font-size:12px;color:#64748b;">Nenhuma conquista ainda.</p>';
+    return;
+  }
+  const emojis = { tarefas:'✅', consistencia:'🔥', social:'🌟', score:'💎', ranking:'🏆' };
+  container.innerHTML = desbloqueadas.map(c => {
+    const nomeImg = c.arte || nomeArquivo(c.nome);
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:50px;text-align:center;">
+      <img src="assets/${nomeImg}.png" alt="${c.nome}" style="width:42px;height:42px;object-fit:contain;"
+           onerror="this.outerHTML='<div style=\\'width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:26px;\\'>${emojis[c.tipo]||'🎖️'}</div>'">
       <span style="font-size:9px;color:#94a3b8;line-height:1.3;">${c.nome}</span>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ─────────────────────────────────────────────
@@ -818,23 +844,36 @@ async function carregarRanking() {
     atualizarContadorRanking(data.competicao.fim);
   }
 
+  // Nome da competição
+  const nomeEl = document.getElementById('ranking-nome');
+  if (nomeEl && data.competicao) nomeEl.textContent = data.competicao.nome;
+
   renderizarRanking(data.ranking || []);
-  // Update perfil ranking row
+
+  // Atualiza posição do usuário na UI
   const u = usuarioAtual || {};
   const meuRank = (data.ranking || []).find(r => r.id_usuario === u.id);
+  if (meuRank && u) {
+    u.posicao_ranking = meuRank.posicao;
+    localStorage.setItem('usuario', JSON.stringify(u));
+    const elRank = document.getElementById('dash-ranking');
+    if (elRank) elRank.textContent = meuRank.posicao + 'º';
+  }
+
+  // Linha do perfil
   const perfilRow = document.getElementById('perfil-ranking-row');
   if (perfilRow && meuRank) {
     const iniciais = getIniciais(u.nome || 'U');
     perfilRow.innerHTML = `
-      <span style="width:60px;font-weight:700;font-family:'Sora';">${meuRank.posicao || (data.ranking.indexOf(meuRank)+1)}º</span>
+      <span style="width:60px;font-weight:700;font-family:'Sora';">${meuRank.posicao || '1'}º</span>
       <div style="display:flex;align-items:center;gap:8px;flex:1;">
         <div style="width:24px;height:24px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${iniciais}</div>
         <span>@${u.nome}</span>
       </div>
       <span style="width:90px;font-weight:600;">${meuRank.xp_obtido} XP</span>
-      <span style="width:90px;font-weight:700;color:#22c55e;">+${Math.floor((meuRank.xp_obtido||0)*0.1)} XP</span>`;
+      <span style="width:90px;font-weight:700;color:#22c55e;">${meuRank.tarefas_concluidas || 0} tarefas</span>`;
   } else if (perfilRow) {
-    perfilRow.innerHTML = '<span style="color:#64748b;font-size:13px;padding:8px;">Sem ranking ativo no momento.</span>';
+    perfilRow.innerHTML = '<span style="color:#64748b;font-size:13px;padding:8px;">Participe concluindo tarefas!</span>';
   }
 }
 
@@ -860,14 +899,18 @@ function renderizarRanking(rows) {
   const u = usuarioAtual || {};
 
   if (rows.length === 0) {
-    container.innerHTML = '<p style="color:#64748b;text-align:center;padding:32px;">Nenhuma competição ativa no momento.</p>';
+    container.innerHTML = '<p style="color:#64748b;text-align:center;padding:32px;">Nenhum participante no ranking ainda.</p>';
     if (podium) podium.innerHTML = '';
     return;
   }
 
   // Podium (top 3)
   if (podium && rows.length >= 1) {
-    const ordem = [rows[1], rows[0], rows[2]].filter(Boolean); // 2º, 1º, 3º
+    // Ordena: posição 2, 1, 3 visualmente
+    const r1 = rows.find(r => (r.posicao||rows.indexOf(r)+1) === 1) || rows[0];
+    const r2 = rows.find(r => (r.posicao||rows.indexOf(r)+1) === 2) || null;
+    const r3 = rows.find(r => (r.posicao||rows.indexOf(r)+1) === 3) || null;
+    const ordem = [r2, r1, r3];
     const alturas = [88, 116, 70];
     const opacidades = [0.25, 0.45, 0.15];
     const tamanhos  = [38, 46, 34];
@@ -893,14 +936,17 @@ function renderizarRanking(rows) {
   container.innerHTML = rows.map((r, i) => {
     const isYou = r.id_usuario === u.id;
     const iniciais = getIniciais(r.nome);
-    return `<div class="ranking-row" style="display:flex;gap:16px;padding:12px 20px;border-top:1px solid #2a3347;font-size:13px;${isYou ? 'background:rgba(124,58,237,0.08);' : ''}">
-      <span style="width:54px;font-weight:700;font-family:'Sora';">${i + 1}º</span>
+    const posicao = r.posicao || (i + 1);
+    const scColor = getScoreColor(r.score || 60);
+    const medalha = posicao === 1 ? '🥇' : posicao === 2 ? '🥈' : posicao === 3 ? '🥉' : '';
+    return `<div class="ranking-row" style="display:flex;gap:16px;padding:12px 20px;border-top:1px solid #2a3347;font-size:13px;align-items:center;${isYou ? 'background:rgba(124,58,237,0.08);' : ''}">
+      <span style="width:54px;font-weight:700;font-family:'Sora';">${medalha || (posicao + 'º')}</span>
       <div style="display:flex;align-items:center;gap:8px;flex:1;">
         <div style="width:26px;height:26px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${iniciais}</div>
         <span>@${r.nome}${isYou ? ' <span style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">você</span>' : ''}</span>
       </div>
       <span style="width:90px;font-weight:600;">${r.xp_obtido} XP</span>
-      <span style="width:90px;font-weight:700;color:#22c55e;">+${Math.floor((r.xp_obtido||0) * 0.1)} XP</span>
+      <span style="width:90px;font-weight:700;color:#22c55e;">${r.tarefas_concluidas || 0} tarefas</span>
     </div>`;
   }).join('');
 }
@@ -1223,7 +1269,7 @@ function setDif(btn, dif) {
   }
   const u = usuarioAtual || {};
   const xpPreview = document.getElementById('nova-xp-preview');
-  if (xpPreview) xpPreview.textContent = '+' + calcularXP(dif, u.score || 60) + ' XP';
+  if (xpPreview) xpPreview.textContent = '+' + calcularXPPreview(dif, u.score || 60) + ' XP';
 }
 
 function nomeArquivo(nome) {
