@@ -773,53 +773,125 @@ async function carregarConquistas() {
   renderizarConquistasPerfil(data);
 }
 
+// Mapa conquista nome → arquivo em assets/
+const ARTE_MAP = {
+  'primeiros passos':     'primeira-vitoria',
+  'produtivo':            'uma-maquina',
+  'sem freio':            'sem-freio',
+  'maquina de tarefas':   'sem-freio',
+  'centenario':           'sem-freio',
+  'compromisso em dia':   'compromisso-em-dia',
+  '7 dias seguidos':      'constancia-inabalavel',
+  'constancia inabalavel':'constancia-inabalavel',
+  'disciplina de ferro':  'disciplina-de-ferro',
+  'compromisso absoluto': 'compromisso-absoluto',
+  'mes consistente':      'compromisso-absoluto',
+  'primeiro post':        'primeiro-post',
+  'influencer':           'influente',
+  'influente':            'influente',
+  'inspirador':           'inspirador-a',
+  'reputacao solida':     'confiavel',
+  'confiavel':            'confiavel',
+  'elite':                'referencia',
+  'referencia':           'referencia',
+  'autoridade':           'autoridade',
+  'top 3':                'inalcancavel',
+  'campeao':              'inalcancavel',
+  'inacancavel':          'inalcancavel',
+};
+
+function getArteConquista(c) {
+  if (c.arte) return c.arte;
+  const norm = (c.nome||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  for (const [k,v] of Object.entries(ARTE_MAP)) {
+    if (norm.includes(k) || k.includes(norm)) return v;
+  }
+  return nomeArquivo(c.nome);
+}
+
 function renderizarConquistas(conquistas) {
   const grid = document.getElementById('conquistas-grid');
   if (!grid) return;
 
-  const total       = conquistas.length;
+  const total = conquistas.length;
   const desbloqueadas = conquistas.filter(c => c.desbloqueada).length;
-  const pct         = total ? Math.round((desbloqueadas / total) * 100) : 0;
+  const pct = total ? Math.round((desbloqueadas / total) * 100) : 0;
 
-  const progBar  = document.getElementById('conquistas-fill') || document.querySelector('#page-conquistas .xp-fill');
-  const progPct  = document.getElementById('conquistas-pct');
-  if (progBar)  progBar.style.width = pct + '%';
-  if (progPct)  progPct.textContent = pct + '%';
+  const progBar = document.getElementById('conquistas-fill');
+  const progPct = document.getElementById('conquistas-pct');
+  if (progBar) progBar.style.width = pct + '%';
+  if (progPct) progPct.textContent = pct + '%';
+
+  const emojis = { tarefas:'✅', consistencia:'🔥', social:'🌟', score:'💎', ranking:'🏆' };
 
   grid.innerHTML = '';
   conquistas.forEach(c => {
+    const arte = getArteConquista(c);
+    const bloqueada = !c.desbloqueada;
+    const emoji = emojis[c.tipo] || '🎖️';
+
+    // Calcula progresso (estimado pelo valor_necessario e tipo)
+    // O backend não retorna valor_atual, então mostramos barra só se desbloqueada
     const div = document.createElement('div');
     div.className = 'conquista-card' + (c.desbloqueada ? ' unlocked' : '');
+    div.style.cssText = `
+      width:180px;min-width:180px;border-radius:16px;padding:0;overflow:hidden;
+      background:${c.desbloqueada ? 'linear-gradient(135deg,#4c1d95,#2563eb)' : '#1c2333'};
+      border:1px solid ${c.desbloqueada ? 'rgba(124,58,237,0.6)' : '#2a3347'};
+      display:flex;flex-direction:column;align-items:center;position:relative;cursor:default;
+    `;
 
-    // Usa campo 'arte' se disponível; senão normaliza o nome
-    const nomeImg = c.arte || nomeArquivo(c.nome);
+    // XP badge no topo
+    const xpBadge = document.createElement('div');
+    xpBadge.style.cssText = `
+      position:absolute;top:10px;right:10px;
+      background:rgba(0,0,0,0.5);border-radius:100px;
+      padding:2px 8px;font-size:10px;font-weight:700;font-family:'Sora';
+      color:${c.desbloqueada ? '#22c55e' : '#94a3b8'};
+    `;
+    xpBadge.textContent = '+' + c.xp_de_resgate + ' XP';
+
+    // Imagem
+    const imgWrap = document.createElement('div');
+    imgWrap.style.cssText = 'width:100%;height:130px;display:flex;align-items:center;justify-content:center;padding:16px;';
     const img = document.createElement('img');
-    img.className = 'conquista-img' + (c.desbloqueada ? '' : ' locked');
-    img.src = 'assets/' + nomeImg + '.png';
+    img.src = 'assets/' + arte + '.png';
     img.alt = c.nome;
-    img.style.cssText = 'width:60px;height:60px;object-fit:contain;';
+    img.style.cssText = `width:90px;height:90px;object-fit:contain;${bloqueada ? 'filter:grayscale(100%) brightness(0.4);' : ''}`;
     img.onerror = function() {
-      // Fallback: emoji por tipo
-      const emojis = { tarefas:'✅', consistencia:'🔥', social:'🌟', score:'💎', ranking:'🏆' };
-      this.outerHTML = `<div style="width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:${c.desbloqueada?1:0.3}">${emojis[c.tipo]||'🎖️'}</div>`;
+      this.outerHTML = `<div style="font-size:52px;${bloqueada?'opacity:0.25':''}">${emoji}</div>`;
     };
-    const nome = document.createElement('div');
-    nome.style.cssText = "font-size:13px;font-weight:700;font-family:'Sora';text-align:center;";
-    nome.textContent = c.nome;
-    const desc = document.createElement('div');
-    desc.style.cssText = 'font-size:11px;color:#64748b;text-align:center;';
-    desc.textContent = c.descricao;
-    const xpTag = document.createElement('span');
-    xpTag.className = 'xp-tag-c ' + (c.desbloqueada ? 'unlocked' : 'locked');
-    xpTag.textContent = '+' + c.xp_de_resgate + ' XP';
-    div.append(img, nome, desc, xpTag);
+    imgWrap.appendChild(img);
+
+    // Info
+    const info = document.createElement('div');
+    info.style.cssText = `
+      width:100%;padding:10px 14px 14px;
+      background:rgba(0,0,0,0.25);text-align:center;
+    `;
+    const nomeEl = document.createElement('div');
+    nomeEl.style.cssText = "font-size:13px;font-weight:700;font-family:'Sora';color:#e2e8f0;margin-bottom:3px;";
+    nomeEl.textContent = c.nome;
+    const descEl = document.createElement('div');
+    descEl.style.cssText = 'font-size:11px;color:#94a3b8;line-height:1.4;margin-bottom:8px;';
+    descEl.textContent = c.descricao;
+
+    info.append(nomeEl, descEl);
+
     if (!c.desbloqueada) {
       const pb = document.createElement('div');
-      pb.style.cssText = 'margin-top:6px;background:#2a3347;border-radius:100px;height:4px;overflow:hidden;';
+      pb.style.cssText = 'background:rgba(255,255,255,0.1);border-radius:100px;height:5px;overflow:hidden;margin-bottom:4px;';
       const pf = document.createElement('div');
-      pf.style.cssText = 'width:0%;height:100%;background:#7c3aed;border-radius:100px;';
-      pb.appendChild(pf); div.appendChild(pb);
+      pf.style.cssText = 'width:0%;height:100%;background:linear-gradient(90deg,#7c3aed,#3b82f6);border-radius:100px;';
+      pb.appendChild(pf);
+      info.appendChild(pb);
+      const pctEl = document.createElement('div');
+      pctEl.style.cssText = 'font-size:10px;color:#64748b;';
+      pctEl.textContent = '0%';
+      info.appendChild(pctEl);
     }
+
+    div.append(xpBadge, imgWrap, info);
     grid.appendChild(div);
   });
 }
