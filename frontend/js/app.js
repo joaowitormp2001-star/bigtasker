@@ -140,6 +140,8 @@ function aplicarUsuarioNaUI(u) {
   if (perfXpMax)  perfXpMax.textContent  = (nivelProx ? nivelProx.min.toLocaleString() : '—') + ' XP → ' + (nivelProx ? nivelProx.nome : 'Máximo');
   if (perfXpVal)  perfXpVal.textContent  = xp.toLocaleString() + ' XP';
   if (perfXpBar)  perfXpBar.style.width  = xpPct + '%';
+  const xpLabelContainer = document.getElementById('xp-label-container');
+  if (xpLabelContainer) xpLabelContainer.style.left = Math.min(Math.max(xpPct, 5), 92) + '%';
 
   // — Configurações: preenche campos
   preencherConfiguracoes(u);
@@ -491,7 +493,10 @@ function renderizarKanban(tarefas) {
         <span style="margin-left:auto;font-size:11px;color:${atrasada?'#64748b':'#22c55e'};font-weight:600;">${atrasada?'+0':'+'+xp} XP</span>
       </div>
       ${concluida ? `<div style="display:flex;justify-content:flex-end;margin-top:8px;">
-        <button onclick="event.stopPropagation();abrirEditor(${t.id})" style="padding:5px 12px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Postar</button>
+        ${t.tem_post
+          ? `<button onclick="event.stopPropagation();navTo('dashboard')" style="padding:5px 12px;border-radius:8px;border:1px solid #7c3aed;background:transparent;color:#c4b5fd;font-size:11px;font-weight:600;cursor:pointer;">Ver post</button>`
+          : `<button onclick="event.stopPropagation();abrirEditor(${t.id})" style="padding:5px 12px;border-radius:8px;border:none;background:#7c3aed;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Postar</button>`
+        }
       </div>` : ''}
     `;
 
@@ -681,8 +686,8 @@ function renderizarFeed(posts) {
     return `<div class="post-card" id="post-card-${idx}">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <div style="width:30px;height:30px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${iniciais}</div>
-          <span style="font-size:13px;font-weight:600;">${p.usuario_nome}${isYou?' <span style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">você</span>':''}</span>
+          <div onclick="abrirPerfilUsuario(${p.id_usuario})" style="width:30px;height:30px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;cursor:pointer;">${iniciais}</div>
+          <span onclick="abrirPerfilUsuario(${p.id_usuario})" style="font-size:13px;font-weight:600;cursor:pointer;">${p.usuario_nome}${isYou?' <span style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">você</span>':''}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
           <span class="score-badge" style="background:${sc};color:${scText};">SCORE ${p.usuario_score || 60}%</span>
@@ -743,8 +748,14 @@ async function reagirPostAPI(postId, tipo, btn) {
 
 async function excluirPostFeed(postId, idx) {
   if (!confirm('Excluir este post?')) return;
-  // (backend não tem endpoint de delete de post, remove só da UI por ora)
-  document.getElementById('post-card-' + idx)?.remove();
+  const { ok } = await apiFetch(`/feed/${postId}`, 'DELETE');
+  if (ok) {
+    document.getElementById('post-card-' + idx)?.remove();
+    mostrarToast('Post excluído');
+    await carregarTarefas();
+  } else {
+    mostrarToast('Erro ao excluir post', true);
+  }
 }
 
 function togglePostMenu(idx) {
@@ -949,6 +960,51 @@ function renderizarRanking(rows) {
       <span style="width:90px;font-weight:700;color:#22c55e;">${r.tarefas_concluidas || 0} tarefas</span>
     </div>`;
   }).join('');
+}
+
+
+// ─────────────────────────────────────────────
+// PERFIL DE OUTRO USUÁRIO
+// ─────────────────────────────────────────────
+async function abrirPerfilUsuario(uid) {
+  const u = usuarioAtual || {};
+  if (uid === u.id) { navTo('perfil'); return; }
+  const { ok, data } = await apiFetch(`/usuario/${uid}`);
+  if (!ok) { mostrarToast('Não foi possível carregar o perfil', true); return; }
+  const modal = document.getElementById('modal-perfil-usuario');
+  if (!modal) return;
+  const nivel = getNivelInfo(data.xp_total || 0);
+  const ini = getIniciais(data.nome);
+  const sc = getScoreColor(data.score || 60);
+  const av = document.getElementById('mpu-avatar');
+  if (av) { av.textContent = ini; av.style.background = 'linear-gradient(135deg,#7c3aed,#3b82f6)'; }
+  const nm = document.getElementById('mpu-nome');
+  if (nm) nm.textContent = '@' + data.nome;
+  const scEl = document.getElementById('mpu-score');
+  if (scEl) { scEl.textContent = 'SCORE ' + (data.score||60) + '%'; scEl.style.background = sc; }
+  const nvEl = document.getElementById('mpu-nivel');
+  if (nvEl) { nvEl.textContent = '✦ ' + nivel.nome; nvEl.className = 'nivel-tag ' + nivel.cls; }
+  const bio = document.getElementById('mpu-bio');
+  if (bio) bio.textContent = data.biografia || '';
+  const xpPct = calcXpPorcentagem(data.xp_total || 0);
+  const nA = NIVEIS_XP.find(n => (data.xp_total||0) >= n.min && (data.xp_total||0) <= n.max) || NIVEIS_XP[0];
+  const nP = NIVEIS_XP[NIVEIS_XP.indexOf(nA)+1];
+  const xpAt = document.getElementById('mpu-xp-atual');
+  const xpPrx = document.getElementById('mpu-xp-prox');
+  const xpFill = document.getElementById('mpu-xp-fill');
+  if (xpAt) xpAt.textContent = (data.xp_total||0).toLocaleString() + ' XP';
+  if (xpPrx) xpPrx.textContent = nP ? nP.min.toLocaleString() + ' XP' : 'Máximo';
+  if (xpFill) xpFill.style.width = xpPct + '%';
+  const rankRow = document.getElementById('mpu-ranking');
+  if (rankRow) {
+    if (data.posicao_ranking) {
+      rankRow.innerHTML = `<span style="width:58px;font-weight:700;">${data.posicao_ranking}º</span><span style="flex:1;">@${data.nome}</span><span style="width:85px;">${data.xp_ranking} XP</span><span style="width:85px;">${data.tarefas_concluidas} tarefas</span>`;
+    } else {
+      rankRow.innerHTML = '<span style="color:#64748b;font-size:13px;">Sem dados de ranking</span>';
+    }
+  }
+  document.getElementById('mpu-conquistas').innerHTML = '<span style="font-size:12px;color:#64748b;">—</span>';
+  modal.classList.add('open');
 }
 
 // ─────────────────────────────────────────────
