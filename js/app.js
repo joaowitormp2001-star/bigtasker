@@ -473,7 +473,7 @@ function renderizarKanban(tarefas) {
         <div class="badge-cat">${t.categoria_icone || '📌'} ${t.categoria_nome || 'Geral'}</div>
         <div style="display:flex;align-items:center;gap:4px;">
           ${atrasada ? '<span class="badge badge-atrasada">ATRASADA</span>' : ''}
-          <button onclick="event.stopPropagation();excluirTarefa(${t.id})" style="background:none;border:none;color:#475569;cursor:pointer;font-size:13px;padding:2px 4px;line-height:1;border-radius:4px;" title="Excluir">🗑</button>
+          <button onclick="event.stopPropagation();excluirTarefa(${t.id})" style="background:none;border:none;color:#475569;cursor:pointer;font-size:13px;padding:2px;" title="Excluir">🗑</button>
         </div>
       </div>
       <div style="font-size:13px;font-weight:600;margin-bottom:8px;">${t.titulo}</div>
@@ -530,19 +530,11 @@ function abrirTarefaById(t) {
 function abrirTarefa(t) { abrirTarefaById(t); }
 
 
-// ─────────────────────────────────────────────
-// EXCLUIR TAREFA
-// ─────────────────────────────────────────────
 async function excluirTarefa(id) {
   if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
   const { ok } = await apiFetch(`/tarefas/${id}`, 'DELETE');
-  if (ok) {
-    fecharModal('modal-tarefa');
-    mostrarToast('Tarefa excluída');
-    await carregarTarefas();
-  } else {
-    mostrarToast('Erro ao excluir tarefa', true);
-  }
+  if (ok) { fecharModal('modal-tarefa'); mostrarToast('Tarefa excluída'); await carregarTarefas(); }
+  else { mostrarToast('Erro ao excluir tarefa', true); }
 }
 
 async function concluirTarefa(id) {
@@ -622,7 +614,6 @@ function iniciarSortable() {
       animation: 150,
       handle: '.task-card',
       filter: '.kanban-header',
-      preventOnFilter: true,
       ghostClass: 'opacity-50',
       onAdd: async (evt) => {
         const card   = evt.item;
@@ -772,15 +763,35 @@ function renderizarConquistas(conquistas) {
   if (progBar)  progBar.style.width = pct + '%';
   if (progPct)  progPct.textContent = pct + '%';
 
-  grid.innerHTML = conquistas.map(c => `
-    <div class="conquista-card ${c.desbloqueada ? 'unlocked' : ''}">
-      <img class="conquista-img ${c.desbloqueada ? '' : 'locked'}" src="assets/${nomeArquivo(c.nome)}.png" alt="${c.nome}" onerror="this.outerHTML='<span style=\"font-size:32px;\">' + c.arte + '</span>'">
-      <div style="font-size:13px;font-weight:700;font-family:'Sora';">${c.nome}</div>
-      <div style="font-size:11px;color:#64748b;text-align:center;">${c.descricao}</div>
-      <span class="xp-tag-c ${c.desbloqueada ? 'unlocked' : 'locked'}">+${c.xp_de_resgate} XP</span>
-      ${!c.desbloqueada ? `<div class="prog-bar" style="margin-top:6px;background:#2a3347;border-radius:100px;height:4px;overflow:hidden;"><div class="prog-fill" style="width:0%;height:100%;background:#7c3aed;border-radius:100px;"></div></div>` : ''}
-    </div>
-  `).join('');
+  grid.innerHTML = '';
+  conquistas.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'conquista-card' + (c.desbloqueada ? ' unlocked' : '');
+    const img = document.createElement('img');
+    img.className = 'conquista-img' + (c.desbloqueada ? '' : ' locked');
+    img.src = 'assets/' + nomeArquivo(c.nome) + '.png';
+    img.alt = c.nome;
+    img.style.cssText = 'width:60px;height:60px;object-fit:contain;';
+    img.onerror = function() { this.style.display = 'none'; };
+    const nome = document.createElement('div');
+    nome.style.cssText = "font-size:13px;font-weight:700;font-family:'Sora';";
+    nome.textContent = c.nome;
+    const desc = document.createElement('div');
+    desc.style.cssText = 'font-size:11px;color:#64748b;text-align:center;';
+    desc.textContent = c.descricao;
+    const xpTag = document.createElement('span');
+    xpTag.className = 'xp-tag-c ' + (c.desbloqueada ? 'unlocked' : 'locked');
+    xpTag.textContent = '+' + c.xp_de_resgate + ' XP';
+    div.append(img, nome, desc, xpTag);
+    if (!c.desbloqueada) {
+      const pb = document.createElement('div');
+      pb.style.cssText = 'margin-top:6px;background:#2a3347;border-radius:100px;height:4px;overflow:hidden;';
+      const pf = document.createElement('div');
+      pf.style.cssText = 'width:0%;height:100%;background:#7c3aed;border-radius:100px;';
+      pb.appendChild(pf); div.appendChild(pb);
+    }
+    grid.appendChild(div);
+  });
 }
 
 function renderizarConquistasPerfil(conquistas) {
@@ -1031,58 +1042,45 @@ async function abrirModalPostar() {
     const prazo = t.prazo ? t.prazo.substring(5,10).split('-').reverse().join('/') : '—';
     const xp = t.xp_final || calcularXP(t.dificuldade, score, false, t.esta_atrasada);
     const difLabel = {facil:'Fácil',medio:'Médio',dificil:'Difícil'}[t.dificuldade] || t.dificuldade;
+    const acaoBtn = t.tem_post
+      ? `<button class="btn-primary" onclick="fecharModal('modal-postar');navTo('dashboard')" style="font-size:12px;padding:8px 16px;background:#2a3347;border:1px solid #7c3aed;color:#c4b5fd;">Ver post</button>`
+      : `<button class="btn-primary" onclick="fecharModal('modal-postar');abrirEditor(${t.id})" style="font-size:12px;padding:8px 16px;">Postar</button>`;
     return `<div style="margin-bottom:14px;">
-      <div class="badge-cat" style="margin-bottom:8px;">\${t.categoria_icone||'📌'} \${t.categoria_nome||'Geral'}</div>
+      <div class="badge-cat" style="margin-bottom:8px;">${t.categoria_icone||'📌'} ${t.categoria_nome||'Geral'}</div>
       <div style="background:#161b27;border:1px solid #2a3347;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;">
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;margin-bottom:5px;">\${t.titulo}</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:5px;">${t.titulo}</div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:11px;color:#64748b;">⏱ \${prazo}</span>
-            <span class="badge badge-\${t.dificuldade}">\${difLabel}</span>
-            <span style="font-size:11px;color:#22c55e;font-weight:600;">+\${xp} XP</span>
+            <span style="font-size:11px;color:#64748b;">⏱ ${prazo}</span>
+            <span class="badge badge-${t.dificuldade}">${difLabel}</span>
+            <span style="font-size:11px;color:#22c55e;font-weight:600;">+${xp} XP</span>
           </div>
         </div>
-        <button class="btn-primary" onclick="fecharModal('modal-postar');abrirEditor(\${t.id})" style="font-size:12px;padding:8px 16px;">Postar</button>
+        ${acaoBtn}
       </div>
     </div>`;
   }).join('');
 }
 
-// ─────────────────────────────────────────────
-// PUBLICAR POST — editor de mídia
-// ─────────────────────────────────────────────
 async function publicarPost() {
-  const modal = document.getElementById('modal-editor');
+  const modal    = document.getElementById('modal-editor');
   const tarefaId = modal?.getAttribute('data-tarefa');
   const legenda  = document.getElementById('editor-legenda')?.value || '';
   const previewImg = document.getElementById('preview-media')?.querySelector('img');
-  const url_imagem = previewImg?.src && previewImg.src.startsWith('data:') ? previewImg.src : '';
-
+  const url_imagem = previewImg?.src?.startsWith('data:') ? previewImg.src : '';
   if (!tarefaId) { mostrarToast('Nenhuma tarefa selecionada', true); return; }
-
-  const btnPostar = modal?.querySelector('.btn-primary');
-  if (btnPostar) { btnPostar.textContent = 'Publicando...'; btnPostar.disabled = true; }
-
-  const { ok, data } = await apiFetch('/feed', 'POST', {
-    id_tarefa: parseInt(tarefaId),
-    url_imagem,
-    legenda,
-  });
-
-  if (btnPostar) { btnPostar.textContent = 'Postar'; btnPostar.disabled = false; }
-
+  const btn = modal?.querySelector('.btn-primary');
+  if (btn) { btn.textContent = 'Publicando...'; btn.disabled = true; }
+  const { ok, data } = await apiFetch('/feed', 'POST', { id_tarefa: parseInt(tarefaId), url_imagem, legenda });
+  if (btn) { btn.textContent = 'Postar'; btn.disabled = false; }
   if (ok) {
-    fecharModal('modal-editor');
-    fecharModal('modal-postar');
+    fecharModal('modal-editor'); fecharModal('modal-postar');
     mostrarToast('Postagem publicada! 🎉');
-    // Atualiza cache da tarefa para mostrar "Ver post" em vez de "Postar"
-    const idx = tarefasCache.findIndex(t => t.id === parseInt(tarefaId));
-    if (idx !== -1) tarefasCache[idx].tem_post = true;
+    const idx2 = tarefasCache.findIndex(t => t.id === parseInt(tarefaId));
+    if (idx2 !== -1) tarefasCache[idx2].tem_post = true;
     await Promise.all([carregarTarefas(), carregarFeed()]);
     navTo('dashboard');
-  } else {
-    mostrarToast(data.mensagem || 'Erro ao publicar', true);
-  }
+  } else { mostrarToast(data.mensagem || 'Erro ao publicar', true); }
 }
 
 function abrirEditor(tarefaId) {
