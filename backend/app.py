@@ -1615,30 +1615,21 @@ def xp_semanal():
 @jwt_required()
 def fix_conquistas_arte():
     """Corrige o campo 'arte' das conquistas existentes no banco."""
-    mapa = {
-        'Primeiros Passos':    'primeira-vitoria',
-        'Produtivo':           'uma-maquina',
-        'Sem Freio':           'sem-freio',
-        'Máquina de Tarefas':  'sem-freio',
-        'Centenário':          'sem-freio',
-        'Compromisso em Dia':  'compromisso-em-dia',
-        '7 Dias Seguidos':     'constancia-inabalavel',
-        'Constância Inabalável':'constancia-inabalavel',
-        'Disciplina de Ferro': 'disciplina-de-ferro',
-        'Compromisso Absoluto':'compromisso-absoluto',
-        'Mês Consistente':     'compromisso-absoluto',
-        'Primeiro Post':       'primeiro-post',
-        'Influencer':          'influente',
-        'Influente':           'influente',
-        'Inspirador(a)':       'inspirador-a',
-        'Reputação Sólida':    'confiavel',
-        'Confiável':           'confiavel',
-        'Elite':               'referencia',
-        'Referência':          'referencia',
-        'Autoridade':          'autoridade',
-        'Top 3':               'inalcancavel',
-        'Campeão':             'inalcancavel',
-        'Inaçançável':         'inalcancavel',
+   mapa = {
+        'Primeira Vitória':     'primeira-vitoria',
+        'Uma Máquina':          'uma-maquina',
+        'Sem Freio':            'sem-freio',
+        'Compromisso em dia':   'compromisso-em-dia',
+        'Constância inabalável':'constancia-inabalavel',
+        'Disciplina de ferro':  'disciplina-de-ferro',
+        'Compromisso absoluto': 'compromisso-absoluto',
+        'Inalcançável':         'inalcancavel',
+        'Primeiro post':        'primeiro-post',
+        'Inspirador(a)':        'inspirador-a',
+        'Influente':            'influente',
+        'Confiável':            'confiavel',
+        'Referência':           'referencia',
+        'Autoridade':           'autoridade',
     }
     conexao = criar_conexao()
     cursor  = conexao.cursor()
