@@ -394,18 +394,22 @@ def cadastro():
         # Cria conquistas padrão para o novo usuário
         conquistas_padrao = [
             # (tipo, nome, descricao, valor_necessario, xp_de_resgate, arte)
-            ('tarefas',     'Primeiros Passos',       'Conclua sua primeira tarefa',         1,   50,  'primeiros-passos'),
-            ('tarefas',     'Produtivo',              'Conclua 10 tarefas',                  10,  150, 'produtivo'),
-            ('tarefas',     'Máquina de Tarefas',     'Conclua 50 tarefas',                  50,  500, 'maquina-de-tarefas'),
-            ('tarefas',     'Centenário',             'Conclua 100 tarefas',                 100, 1000,'centenario'),
-            ('consistencia','7 Dias Seguidos',        'Complete tarefas por 7 dias seguidos',7,   200, '7-dias-seguidos'),
-            ('consistencia','Mês Consistente',        'Complete tarefas por 30 dias seguidos',30, 800, 'mes-consistente'),
-            ('social',      'Primeiro Post',          'Publique sua primeira conquista',     1,   100, 'primeiro-post'),
-            ('social',      'Influencer',             'Publique 10 conquistas',              10,  300, 'influencer'),
-            ('score',       'Reputação Sólida',       'Alcance score ≥ 70',                  70,  200, 'reputacao-solida'),
-            ('score',       'Elite',                  'Alcance score ≥ 90',                  90,  500, 'elite'),
-            ('ranking',     'Top 3',                  'Fique entre os 3 primeiros do ranking', 3, 300, 'top-3'),
-            ('ranking',     'Campeão',                'Fique em 1º lugar no ranking',        1,   1000,'campeao'),
+            # arte = nome do arquivo em assets/ sem .png
+            ('tarefas',     'Primeiros Passos',    'Conclua sua primeira tarefa',           1,   50,  'primeira-vitoria'),
+            ('tarefas',     'Produtivo',           'Conclua 10 tarefas',                    10,  150, 'uma-maquina'),
+            ('tarefas',     'Sem Freio',           'Conclua 50 tarefas',                    50,  500, 'sem-freio'),
+            ('tarefas',     'Centenário',          'Conclua 100 tarefas',                   100, 1000,'sem-freio'),
+            ('consistencia','Compromisso em Dia',  'Complete 3 dias sem atrasar',           3,   120, 'compromisso-em-dia'),
+            ('consistencia','Constância Inabalável','Complete 7 dias sem atrasar',          7,   200, 'constancia-inabalavel'),
+            ('consistencia','Disciplina de Ferro', 'Complete 30 dias sem atrasar',          30,  900, 'disciplina-de-ferro'),
+            ('consistencia','Compromisso Absoluto','Complete 100 dias sem atrasar',         100, 3000,'compromisso-absoluto'),
+            ('social',      'Primeiro Post',       'Publique sua primeira conquista',       1,   100, 'primeiro-post'),
+            ('social',      'Influente',           'Receba 10 corações no feed',            10,  300, 'influente'),
+            ('social',      'Inspirador(a)',       'Receba 50 corações no feed',            50,  800, 'inspirador-a'),
+            ('score',       'Confiável',           'Alcance score acima de 70%',            70,  200, 'confiavel'),
+            ('score',       'Referência',          'Alcance score acima de 85%',            85,  500, 'referencia'),
+            ('score',       'Autoridade',          'Alcance score acima de 95%',            95,  1500,'autoridade'),
+            ('ranking',     'Inaçançável',         'Fique em 1º lugar no ranking',          1,   1000,'inalcancavel'),
         ]
 
         for tipo, nome_c, desc, val, xp_r, arte in conquistas_padrao:
@@ -1349,18 +1353,21 @@ def listar_conquistas():
     if total == 0:
         # Cria conquistas padrão retroativamente
         conquistas_padrao = [
-            ('tarefas',     'Primeiros Passos',       'Conclua sua primeira tarefa',          1,   50,  'primeiros-passos'),
-            ('tarefas',     'Produtivo',              'Conclua 10 tarefas',                   10,  150, 'produtivo'),
-            ('tarefas',     'Máquina de Tarefas',     'Conclua 50 tarefas',                   50,  500, 'maquina-de-tarefas'),
-            ('tarefas',     'Centenário',             'Conclua 100 tarefas',                  100, 1000,'centenario'),
-            ('consistencia','7 Dias Seguidos',        'Complete tarefas por 7 dias seguidos', 7,   200, '7-dias-seguidos'),
-            ('consistencia','Mês Consistente',        'Complete tarefas por 30 dias seguidos',30,  800, 'mes-consistente'),
-            ('social',      'Primeiro Post',          'Publique sua primeira conquista',      1,   100, 'primeiro-post'),
-            ('social',      'Influencer',             'Publique 10 conquistas',               10,  300, 'influencer'),
-            ('score',       'Reputação Sólida',       'Alcance score ≥ 70',                   70,  200, 'reputacao-solida'),
-            ('score',       'Elite',                  'Alcance score ≥ 90',                   90,  500, 'elite'),
-            ('ranking',     'Top 3',                  'Fique entre os 3 primeiros do ranking',3,   300, 'top-3'),
-            ('ranking',     'Campeão',                'Fique em 1º lugar no ranking',         1,   1000,'campeao'),
+            ('tarefas',     'Primeiros Passos',    'Conclua sua primeira tarefa',           1,   50,  'primeira-vitoria'),
+            ('tarefas',     'Produtivo',           'Conclua 10 tarefas',                    10,  150, 'uma-maquina'),
+            ('tarefas',     'Sem Freio',           'Conclua 50 tarefas',                    50,  500, 'sem-freio'),
+            ('tarefas',     'Centenário',          'Conclua 100 tarefas',                   100, 1000,'sem-freio'),
+            ('consistencia','Compromisso em Dia',  'Complete 3 dias sem atrasar',           3,   120, 'compromisso-em-dia'),
+            ('consistencia','Constância Inabalável','Complete 7 dias sem atrasar',          7,   200, 'constancia-inabalavel'),
+            ('consistencia','Disciplina de Ferro', 'Complete 30 dias sem atrasar',          30,  900, 'disciplina-de-ferro'),
+            ('consistencia','Compromisso Absoluto','Complete 100 dias sem atrasar',         100, 3000,'compromisso-absoluto'),
+            ('social',      'Primeiro Post',       'Publique sua primeira conquista',       1,   100, 'primeiro-post'),
+            ('social',      'Influente',           'Receba 10 corações no feed',            10,  300, 'influente'),
+            ('social',      'Inspirador(a)',       'Receba 50 corações no feed',            50,  800, 'inspirador-a'),
+            ('score',       'Confiável',           'Alcance score acima de 70%',            70,  200, 'confiavel'),
+            ('score',       'Referência',          'Alcance score acima de 85%',            85,  500, 'referencia'),
+            ('score',       'Autoridade',          'Alcance score acima de 95%',            95,  1500,'autoridade'),
+            ('ranking',     'Inaçançável',         'Fique em 1º lugar no ranking',          1,   1000,'inalcancavel'),
         ]
         for tipo, nome_c, desc, val, xp_r, arte in conquistas_padrao:
             cursor.execute(
@@ -1598,6 +1605,51 @@ def xp_semanal():
     conexao.close()
 
     return jsonify({"xp_semanal": int(xp)}), 200
+
+
+
+# =========================
+# ADMIN - CORRIGIR ARTES DAS CONQUISTAS
+# =========================
+@app.route("/admin/fix-conquistas-arte", methods=["POST"])
+@jwt_required()
+def fix_conquistas_arte():
+    """Corrige o campo 'arte' das conquistas existentes no banco."""
+    mapa = {
+        'Primeiros Passos':    'primeira-vitoria',
+        'Produtivo':           'uma-maquina',
+        'Sem Freio':           'sem-freio',
+        'Máquina de Tarefas':  'sem-freio',
+        'Centenário':          'sem-freio',
+        'Compromisso em Dia':  'compromisso-em-dia',
+        '7 Dias Seguidos':     'constancia-inabalavel',
+        'Constância Inabalável':'constancia-inabalavel',
+        'Disciplina de Ferro': 'disciplina-de-ferro',
+        'Compromisso Absoluto':'compromisso-absoluto',
+        'Mês Consistente':     'compromisso-absoluto',
+        'Primeiro Post':       'primeiro-post',
+        'Influencer':          'influente',
+        'Influente':           'influente',
+        'Inspirador(a)':       'inspirador-a',
+        'Reputação Sólida':    'confiavel',
+        'Confiável':           'confiavel',
+        'Elite':               'referencia',
+        'Referência':          'referencia',
+        'Autoridade':          'autoridade',
+        'Top 3':               'inalcancavel',
+        'Campeão':             'inalcancavel',
+        'Inaçançável':         'inalcancavel',
+    }
+    conexao = criar_conexao()
+    cursor  = conexao.cursor()
+    for nome, arte in mapa.items():
+        cursor.execute(
+            "UPDATE conquistas SET arte=%s WHERE nome=%s",
+            (arte, nome)
+        )
+    conexao.commit()
+    cursor.close(); conexao.close()
+    return jsonify({"mensagem": "Artes corrigidas"}), 200
 
 
 # =========================
