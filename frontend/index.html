@@ -161,7 +161,7 @@ input[type="date"]{color-scheme:dark;color:#fff;}
 .ranking-row:hover{background:rgba(124,58,237,0.06);}
 
 /* NOTIF PANEL */
-#notif-panel{position:absolute;bottom:calc(100% + 8px);right:0;width:380px;background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;z-index:600;animation:modalIn 0.2s ease;max-height:400px;overflow-y:auto;}
+#notif-panel{position:fixed;bottom:80px;right:16px;width:340px;background:#1c2333;border:1px solid #2a3347;border-radius:16px;overflow:hidden;z-index:600;animation:modalIn 0.2s ease;max-height:400px;overflow-y:auto;}
 .notif-item{padding:14px 16px;border-bottom:1px solid #2a3347;cursor:pointer;transition:background 0.15s;}
 .notif-item:hover{background:rgba(124,58,237,0.06);}
 .notif-item:last-child{border-bottom:none;}
@@ -188,19 +188,28 @@ input[type="date"]{color-scheme:dark;color:#fff;}
 .settings-field .edit-btn{background:none;border:none;color:#7c3aed;cursor:pointer;padding:2px 6px;display:flex;align-items:center;}
 .settings-field input.sf-input{background:transparent;border:none;outline:none;color:#e2e8f0;font-size:14px;font-family:'Inter';flex:1;}
 
-    @media (max-width: 768px) {
-      .sidebar { position: fixed; left: -260px; top: 0; height: 100vh; z-index: 200; transition: left 0.3s; }
-      .sidebar.open { left: 0; }
-      .main-content { margin-left: 0 !important; }
-      #btn-menu-mobile { display: flex !important; }
-      .dash-bottom { flex-direction: column !important; }
-      .feed-col, .tasks-col { width: 100% !important; }
-      #page-tarefas > div:last-child { flex-direction: column !important; height: auto !important; }
-      .kanban-col { min-height: 200px; }
-      .modal-box { margin: 12px; max-width: calc(100vw - 24px) !important; }
-    }
-    @media (max-width: 480px) {
+    @media (max-width: 900px) {
+      #app { padding: 0; gap: 0; flex-direction: column; }
+      #sidebar { width: 100%; min-width: unset; height: auto; border-radius: 0; border-left: none; border-right: none; border-top: none; flex-direction: row; padding: 12px 16px; align-items: center; flex-shrink: 0; overflow-x: auto; }
+      #sidebar > div:first-child { display: none; }
+      #sidebar > div:nth-child(2) { display: flex; flex-direction: row; gap: 4px; flex: 1; overflow-x: auto; white-space: nowrap; }
+      #sidebar > div:last-child { display: none; }
+      .nav-item { padding: 7px 12px; font-size: 12px; border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+      .nav-item.active { border-left-color: transparent; border-bottom-color: #7c3aed; }
+      #main-content { border-radius: 0; border-left: none; border-right: none; flex: 1; overflow: hidden; }
+      .dash-top { padding: 16px 16px 0; }
       .dash-top > div { grid-template-columns: repeat(2,1fr) !important; }
+      .dash-bottom { flex-direction: column !important; }
+      .feed-col { width: 100% !important; max-width: 100% !important; padding: 12px 16px; }
+      .tasks-col { width: 100% !important; min-width: unset !important; border-left: none; border-top: 1px solid #2a3347; padding: 12px 16px; }
+      .page-scroll { padding: 16px; }
+      #page-tarefas { padding: 16px !important; }
+      #page-tarefas > div:last-child { flex-direction: column !important; height: auto !important; overflow-y: auto !important; }
+      .kanban-col { min-height: 180px; }
+      .modal-box { margin: 8px; max-width: calc(100vw - 16px) !important; padding: 20px; }
+      #modal-editor .modal-box > div[style*="flex"] { flex-direction: column !important; }
+      .conquista-card { width: calc(50% - 8px) !important; min-width: unset !important; }
+      #ranking-podium { gap: 8px; }
     }
     </style>
 </head>
@@ -283,15 +292,15 @@ input[type="date"]{color-scheme:dark;color:#fff;}
       <div class="nav-item" onclick="navTo('conquistas')">Conquistas</div>
       <div class="nav-item" onclick="navTo('instrucoes')">Instruções</div>
       <div class="nav-item" onclick="navTo('configuracoes')">Configurações</div>
-      <div class="nav-item" onclick="navTo('painel-adm')">Painel Adm</div>
+      <div id="nav-painel-adm" class="nav-item" onclick="navTo('painel-adm')" style="display:none;">Painel Adm</div>
     </div>
     <!-- User card -->
     <div style="padding:0 14px;">
       <div onclick="navTo('perfil')" style="background:#1c2333;border:1px solid #2a3347;border-radius:12px;padding:10px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color 0.2s;" onmouseenter="this.style.borderColor='#7c3aed'" onmouseleave="this.style.borderColor='#2a3347'">
-        <div style="width:34px;height:34px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:12px;flex-shrink:0;">JW</div>
+        <div id="sidebar-avatar" style="width:34px;height:34px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:12px;flex-shrink:0;">??</div>
         <div style="min-width:0;flex:1;">
-          <div style="font-size:12px;font-weight:600;font-family:'Sora';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@joao.witor</div>
-          <span class="nivel-tag nivel-ouro" style="font-size:10px;padding:2px 8px;margin-top:2px;display:inline-flex;">✦ Tasker Ouro</span>
+          <div id="sidebar-nome" style="font-size:12px;font-weight:600;font-family:'Sora';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@usuário</div>
+          <span id="sidebar-nivel" class="nivel-tag nivel-bronze" style="font-size:10px;padding:2px 8px;margin-top:2px;display:inline-flex;">✦ Tasker Bronze</span>
         </div>
         <div style="position:relative;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();toggleNotif(this)">
           <svg width="18" height="18" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -430,7 +439,7 @@ input[type="date"]{color-scheme:dark;color:#fff;}
                 <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:6px;"><span id="perfil-xp-min">0 XP</span><span id="perfil-xp-max">500 XP → Tasker Prata</span></div>
                 <div style="position:relative;">
                   <div class="xp-bar"><div id="perfil-xp-fill" class="xp-fill" style="width:0%;"></div></div>
-                  <div style="position:absolute;bottom:-18px;left:0%;transform:translateX(-50%);text-align:center;">
+                  <div id="xp-label-container" style="position:absolute;bottom:-18px;left:0%;transform:translateX(-50%);text-align:center;transition:left 0.6s ease;">
                     <div style="width:2px;height:6px;background:#c4b5fd;margin:0 auto 1px;"></div>
                     <span id="perfil-xp-valor" style="font-size:10px;color:#c4b5fd;font-weight:700;white-space:nowrap;">0 XP</span>
                   </div>
