@@ -102,7 +102,6 @@ def atualizar_ranking(cursor, id_usuario, xp_ganho):
             SET xp_obtido = %s,
                 tarefas_concluidas = %s,
                 participacao_ativa = TRUE,
-                data_atualizacao = NOW()
             WHERE id = %s
             """,
             (novo_xp, novas_tarefas, entry[0])
@@ -112,7 +111,7 @@ def atualizar_ranking(cursor, id_usuario, xp_ganho):
             """
             INSERT INTO ranking
                 (id_usuario, id_competicao, xp_obtido,
-                 tarefas_concluidas, participacao_ativa, data_atualizacao)
+                 tarefas_concluidas, participacao_ativa)
             VALUES (%s, %s, %s, 1, TRUE, NOW())
             """,
             (id_usuario, id_competicao, xp_ganho)
@@ -273,7 +272,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
         cursor.execute(
             """
             INSERT INTO transacoes_xp
-                (id_usuario, origem, quantidade_xp, data_registro)
+                (id_usuario, origem, quantia_xp, data_registro)
             VALUES (%s, 'conquista', %s, NOW())
             """,
             (id_usuario, xp_de_resgate)
@@ -431,7 +430,7 @@ def cadastro():
                 """
                 INSERT INTO ranking
                     (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                     participacao_ativa, posicao, data_atualizacao)
+                     participacao_ativa, posicao)
                 VALUES (%s, %s, 0, 0, FALSE, NULL, NOW())
                 ON CONFLICT DO NOTHING
                 """,
@@ -492,7 +491,7 @@ def meu_perfil():
     # XP semanal
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantidade_xp), 0)
+        SELECT COALESCE(SUM(quantia_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s
           AND data_registro >= NOW() - INTERVAL '7 days'
@@ -530,6 +529,37 @@ def meu_perfil():
         "biografia":       u[7],
         "xp_semanal":      int(xp_semanal),
         "posicao_ranking": rank_row[0] if rank_row else None,
+    }), 200
+
+
+# =========================
+# PERFIL DE OUTRO USUÁRIO
+# =========================
+@app.route("/usuario/<int:uid>", methods=["GET"])
+@jwt_required()
+def perfil_usuario(uid):
+    conexao = criar_conexao()
+    cursor  = conexao.cursor()
+    cursor.execute(
+        "SELECT u.id, u.nome, u.email, u.xp_total, u.score, n.nome, u.foto, u.biografia FROM usuarios u JOIN niveis n ON u.id_nivel=n.id WHERE u.id=%s",
+        (uid,)
+    )
+    u = cursor.fetchone()
+    if not u:
+        cursor.close(); conexao.close()
+        return jsonify({"mensagem": "Usuário não encontrado"}), 404
+    cursor.execute(
+        "SELECT r.posicao, r.xp_obtido, r.tarefas_concluidas FROM ranking r JOIN competicoes c ON r.id_competicao=c.id WHERE r.id_usuario=%s AND c.status='ativa' LIMIT 1",
+        (uid,)
+    )
+    rank = cursor.fetchone()
+    cursor.close(); conexao.close()
+    return jsonify({
+        "id": u[0], "nome": u[1], "email": u[2], "xp_total": u[3],
+        "score": u[4], "nivel": u[5], "foto": u[6], "biografia": u[7],
+        "posicao_ranking": rank[0] if rank else None,
+        "xp_ranking": float(rank[1]) if rank else 0,
+        "tarefas_concluidas": rank[2] if rank else 0,
     }), 200
 
 
@@ -782,12 +812,29 @@ def excluir_tarefa(id_tarefa):
     conexao = criar_conexao()
     cursor  = conexao.cursor()
 
-    cursor.execute(
-        "DELETE FROM tarefas WHERE id = %s AND id_usuario = %s",
-        (id_tarefa, id_usuario)
-    )
-    deletados = cursor.rowcount
-    conexao.commit()
+    try:
+        # Remove reações e postagens relacionadas primeiro (FK constraint)
+        cursor.execute(
+            """DELETE FROM reacoes_postagens WHERE id_post IN (
+                SELECT id FROM postagens WHERE id_tarefa=%s AND id_usuario=%s
+            )""",
+            (id_tarefa, id_usuario)
+        )
+        cursor.execute(
+            "DELETE FROM postagens WHERE id_tarefa=%s AND id_usuario=%s",
+            (id_tarefa, id_usuario)
+        )
+        cursor.execute(
+            "DELETE FROM tarefas WHERE id=%s AND id_usuario=%s",
+            (id_tarefa, id_usuario)
+        )
+        deletados = cursor.rowcount
+        conexao.commit()
+    except Exception as e:
+        conexao.rollback()
+        cursor.close(); conexao.close()
+        return jsonify({"mensagem": f"Erro ao excluir: {str(e)}"}), 500
+
     cursor.close()
     conexao.close()
 
@@ -853,7 +900,7 @@ def concluir_tarefa(id_tarefa):
         cursor.execute(
             """
             INSERT INTO transacoes_xp
-                (id_usuario, id_tarefa, origem, quantidade_xp, data_registro)
+                (id_usuario, id_tarefa, origem, quantia_xp, data_registro)
             VALUES (%s, %s, 'tarefa', %s, NOW())
             """,
             (id_usuario, id_tarefa, xp_final)
@@ -898,7 +945,7 @@ def concluir_tarefa(id_tarefa):
     # XP semanal atualizado
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantidade_xp), 0)
+        SELECT COALESCE(SUM(quantia_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s AND data_registro >= NOW() - INTERVAL '7 days'
         """,
@@ -984,7 +1031,7 @@ def ranking():
             """
             INSERT INTO ranking
                 (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                 participacao_ativa, posicao, data_atualizacao)
+                 participacao_ativa, posicao)
             VALUES (%s, %s, 0, 0, FALSE, NULL, NOW())
             """,
             (id_usuario, id_competicao)
@@ -1193,6 +1240,22 @@ def criar_postagem():
 # =========================
 # FEED - REAGIR A POST
 # =========================
+@app.route("/feed/<int:id_post>", methods=["DELETE"])
+@jwt_required()
+def excluir_post(id_post):
+    id_usuario = int(get_jwt_identity())
+    conexao = criar_conexao()
+    cursor  = conexao.cursor()
+    cursor.execute("DELETE FROM reacoes_postagens WHERE id_post=%s", (id_post,))
+    cursor.execute("DELETE FROM postagens WHERE id=%s AND id_usuario=%s", (id_post, id_usuario))
+    deletados = cursor.rowcount
+    conexao.commit()
+    cursor.close(); conexao.close()
+    if deletados == 0:
+        return jsonify({"mensagem": "Post não encontrado"}), 404
+    return jsonify({"mensagem": "Post excluído"}), 200
+
+
 @app.route("/feed/<int:id_post>/reagir", methods=["POST"])
 @jwt_required()
 def reagir_post(id_post):
@@ -1523,7 +1586,7 @@ def xp_semanal():
 
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantidade_xp), 0)
+        SELECT COALESCE(SUM(quantia_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s
           AND data_registro >= NOW() - INTERVAL '7 days'
@@ -1559,3 +1622,4 @@ def teste_db():
 # =========================
 if __name__ == "__main__":
     app.run(debug=True)
+# Wed Jun  3 03:29:25 -03 2026
