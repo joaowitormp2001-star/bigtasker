@@ -74,67 +74,8 @@ def verificar_consistencia(cursor, id_usuario):
 
 
 def atualizar_ranking(cursor, id_usuario, xp_ganho):
-    """
-    Insere ou atualiza o usuário na tabela ranking para a competição ativa.
-    """
-    cursor.execute(
-        "SELECT id FROM competicoes WHERE status = 'ativa' ORDER BY inicio DESC LIMIT 1"
-    )
-    comp = cursor.fetchone()
-    if not comp:
-        return
-
-    id_competicao = comp[0]
-
-    # Verifica se já existe entrada
-    cursor.execute(
-        "SELECT id, xp_obtido, tarefas_concluidas FROM ranking WHERE id_usuario = %s AND id_competicao = %s",
-        (id_usuario, id_competicao)
-    )
-    entry = cursor.fetchone()
-
-    if entry:
-        novo_xp = (entry[1] or 0) + xp_ganho
-        novas_tarefas = (entry[2] or 0) + 1
-        cursor.execute(
-            """
-            UPDATE ranking
-            SET xp_obtido = %s,
-                tarefas_concluidas = %s,
-                participacao_ativa = TRUE,
-            WHERE id = %s
-            """,
-            (novo_xp, novas_tarefas, entry[0])
-        )
-    else:
-        cursor.execute(
-            """
-            INSERT INTO ranking
-                (id_usuario, id_competicao, xp_obtido,
-                 tarefas_concluidas, participacao_ativa)
-            VALUES (%s, %s, %s, 1, TRUE, NOW())
-            """,
-            (id_usuario, id_competicao, xp_ganho)
-        )
-
-    # Recalcula posições
-    cursor.execute(
-        """
-        UPDATE ranking r
-        SET posicao = sub.nova_pos
-        FROM (
-            SELECT id,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY id_competicao
-                       ORDER BY xp_obtido DESC, tarefas_concluidas DESC
-                   ) AS nova_pos
-            FROM ranking
-            WHERE id_competicao = %s
-        ) sub
-        WHERE r.id = sub.id
-        """,
-        (id_competicao,)
-    )
+    """Mantida por compatibilidade — lógica migrada para dentro de concluir_tarefa."""
+    pass
 
 
 def verificar_e_conceder_conquistas(cursor, id_usuario):
@@ -272,7 +213,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
         cursor.execute(
             """
             INSERT INTO transacoes_xp
-                (id_usuario, origem, quantia_xp, data_registro)
+                (id_usuario, origem, quantidade_xp, data_registro)
             VALUES (%s, 'conquista', %s, NOW())
             """,
             (id_usuario, xp_de_resgate)
@@ -394,22 +335,18 @@ def cadastro():
         # Cria conquistas padrão para o novo usuário
         conquistas_padrao = [
             # (tipo, nome, descricao, valor_necessario, xp_de_resgate, arte)
-            # arte = nome do arquivo em assets/ sem .png
-            ('tarefas',     'Primeiros Passos',    'Conclua sua primeira tarefa',           1,   50,  'primeira-vitoria'),
-            ('tarefas',     'Produtivo',           'Conclua 10 tarefas',                    10,  150, 'uma-maquina'),
-            ('tarefas',     'Sem Freio',           'Conclua 50 tarefas',                    50,  500, 'sem-freio'),
-            ('tarefas',     'Centenário',          'Conclua 100 tarefas',                   100, 1000,'sem-freio'),
-            ('consistencia','Compromisso em Dia',  'Complete 3 dias sem atrasar',           3,   120, 'compromisso-em-dia'),
-            ('consistencia','Constância Inabalável','Complete 7 dias sem atrasar',          7,   200, 'constancia-inabalavel'),
-            ('consistencia','Disciplina de Ferro', 'Complete 30 dias sem atrasar',          30,  900, 'disciplina-de-ferro'),
-            ('consistencia','Compromisso Absoluto','Complete 100 dias sem atrasar',         100, 3000,'compromisso-absoluto'),
-            ('social',      'Primeiro Post',       'Publique sua primeira conquista',       1,   100, 'primeiro-post'),
-            ('social',      'Influente',           'Receba 10 corações no feed',            10,  300, 'influente'),
-            ('social',      'Inspirador(a)',       'Receba 50 corações no feed',            50,  800, 'inspirador-a'),
-            ('score',       'Confiável',           'Alcance score acima de 70%',            70,  200, 'confiavel'),
-            ('score',       'Referência',          'Alcance score acima de 85%',            85,  500, 'referencia'),
-            ('score',       'Autoridade',          'Alcance score acima de 95%',            95,  1500,'autoridade'),
-            ('ranking',     'Inaçançável',         'Fique em 1º lugar no ranking',          1,   1000,'inalcancavel'),
+            ('tarefas',     'Primeiros Passos',       'Conclua sua primeira tarefa',         1,   50,  'primeiros-passos'),
+            ('tarefas',     'Produtivo',              'Conclua 10 tarefas',                  10,  150, 'produtivo'),
+            ('tarefas',     'Máquina de Tarefas',     'Conclua 50 tarefas',                  50,  500, 'maquina-de-tarefas'),
+            ('tarefas',     'Centenário',             'Conclua 100 tarefas',                 100, 1000,'centenario'),
+            ('consistencia','7 Dias Seguidos',        'Complete tarefas por 7 dias seguidos',7,   200, '7-dias-seguidos'),
+            ('consistencia','Mês Consistente',        'Complete tarefas por 30 dias seguidos',30, 800, 'mes-consistente'),
+            ('social',      'Primeiro Post',          'Publique sua primeira conquista',     1,   100, 'primeiro-post'),
+            ('social',      'Influencer',             'Publique 10 conquistas',              10,  300, 'influencer'),
+            ('score',       'Reputação Sólida',       'Alcance score ≥ 70',                  70,  200, 'reputacao-solida'),
+            ('score',       'Elite',                  'Alcance score ≥ 90',                  90,  500, 'elite'),
+            ('ranking',     'Top 3',                  'Fique entre os 3 primeiros do ranking', 3, 300, 'top-3'),
+            ('ranking',     'Campeão',                'Fique em 1º lugar no ranking',        1,   1000,'campeao'),
         ]
 
         for tipo, nome_c, desc, val, xp_r, arte in conquistas_padrao:
@@ -434,7 +371,7 @@ def cadastro():
                 """
                 INSERT INTO ranking
                     (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                     participacao_ativa, posicao)
+                     participacao_ativa, posicao, data_atualizacao)
                 VALUES (%s, %s, 0, 0, FALSE, NULL, NOW())
                 ON CONFLICT DO NOTHING
                 """,
@@ -495,7 +432,7 @@ def meu_perfil():
     # XP semanal
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantia_xp), 0)
+        SELECT COALESCE(SUM(quantidade_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s
           AND data_registro >= NOW() - INTERVAL '7 days'
@@ -533,37 +470,6 @@ def meu_perfil():
         "biografia":       u[7],
         "xp_semanal":      int(xp_semanal),
         "posicao_ranking": rank_row[0] if rank_row else None,
-    }), 200
-
-
-# =========================
-# PERFIL DE OUTRO USUÁRIO
-# =========================
-@app.route("/usuario/<int:uid>", methods=["GET"])
-@jwt_required()
-def perfil_usuario(uid):
-    conexao = criar_conexao()
-    cursor  = conexao.cursor()
-    cursor.execute(
-        "SELECT u.id, u.nome, u.email, u.xp_total, u.score, n.nome, u.foto, u.biografia FROM usuarios u JOIN niveis n ON u.id_nivel=n.id WHERE u.id=%s",
-        (uid,)
-    )
-    u = cursor.fetchone()
-    if not u:
-        cursor.close(); conexao.close()
-        return jsonify({"mensagem": "Usuário não encontrado"}), 404
-    cursor.execute(
-        "SELECT r.posicao, r.xp_obtido, r.tarefas_concluidas FROM ranking r JOIN competicoes c ON r.id_competicao=c.id WHERE r.id_usuario=%s AND c.status='ativa' LIMIT 1",
-        (uid,)
-    )
-    rank = cursor.fetchone()
-    cursor.close(); conexao.close()
-    return jsonify({
-        "id": u[0], "nome": u[1], "email": u[2], "xp_total": u[3],
-        "score": u[4], "nivel": u[5], "foto": u[6], "biografia": u[7],
-        "posicao_ranking": rank[0] if rank else None,
-        "xp_ranking": float(rank[1]) if rank else 0,
-        "tarefas_concluidas": rank[2] if rank else 0,
     }), 200
 
 
@@ -816,29 +722,12 @@ def excluir_tarefa(id_tarefa):
     conexao = criar_conexao()
     cursor  = conexao.cursor()
 
-    try:
-        # Remove reações e postagens relacionadas primeiro (FK constraint)
-        cursor.execute(
-            """DELETE FROM reacoes_postagens WHERE id_post IN (
-                SELECT id FROM postagens WHERE id_tarefa=%s AND id_usuario=%s
-            )""",
-            (id_tarefa, id_usuario)
-        )
-        cursor.execute(
-            "DELETE FROM postagens WHERE id_tarefa=%s AND id_usuario=%s",
-            (id_tarefa, id_usuario)
-        )
-        cursor.execute(
-            "DELETE FROM tarefas WHERE id=%s AND id_usuario=%s",
-            (id_tarefa, id_usuario)
-        )
-        deletados = cursor.rowcount
-        conexao.commit()
-    except Exception as e:
-        conexao.rollback()
-        cursor.close(); conexao.close()
-        return jsonify({"mensagem": f"Erro ao excluir: {str(e)}"}), 500
-
+    cursor.execute(
+        "DELETE FROM tarefas WHERE id = %s AND id_usuario = %s",
+        (id_tarefa, id_usuario)
+    )
+    deletados = cursor.rowcount
+    conexao.commit()
     cursor.close()
     conexao.close()
 
@@ -882,7 +771,7 @@ def concluir_tarefa(id_tarefa):
 
     status, dificuldade, esta_atrasada, score = row
 
-    # Tarefa atrasada → 0 XP (status vira "concluida" mas sem recompensa)
+    # Tarefa atrasada → 0 XP
     if esta_atrasada:
         xp_final = 0
     else:
@@ -904,7 +793,7 @@ def concluir_tarefa(id_tarefa):
         cursor.execute(
             """
             INSERT INTO transacoes_xp
-                (id_usuario, id_tarefa, origem, quantia_xp, data_registro)
+                (id_usuario, id_tarefa, origem, quantidade_xp, data_registro)
             VALUES (%s, %s, 'tarefa', %s, NOW())
             """,
             (id_usuario, id_tarefa, xp_final)
@@ -930,10 +819,61 @@ def concluir_tarefa(id_tarefa):
                 (nivel[0], id_usuario)
             )
 
-        # Atualiza ranking
-        atualizar_ranking(cursor, id_usuario, xp_final)
+        # Atualiza ranking — bloco isolado para não derrubar o XP se falhar
+        try:
+            cursor.execute(
+                "SELECT id FROM competicoes WHERE status = 'ativa' ORDER BY inicio DESC LIMIT 1"
+            )
+            comp = cursor.fetchone()
+            if comp:
+                id_competicao = comp[0]
+                cursor.execute(
+                    "SELECT id, xp_obtido, tarefas_concluidas FROM ranking WHERE id_usuario = %s AND id_competicao = %s",
+                    (id_usuario, id_competicao)
+                )
+                entry = cursor.fetchone()
+                if entry:
+                    cursor.execute(
+                        """
+                        UPDATE ranking
+                        SET xp_obtido = %s,
+                            tarefas_concluidas = %s,
+                            participacao_ativa = TRUE
+                        WHERE id = %s
+                        """,
+                        ((entry[1] or 0) + xp_final, (entry[2] or 0) + 1, entry[0])
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        INSERT INTO ranking
+                            (id_usuario, id_competicao, xp_obtido, tarefas_concluidas, participacao_ativa)
+                        VALUES (%s, %s, %s, 1, TRUE)
+                        """,
+                        (id_usuario, id_competicao, xp_final)
+                    )
+                # Recalcula posições
+                cursor.execute(
+                    """
+                    UPDATE ranking r
+                    SET posicao = sub.nova_pos
+                    FROM (
+                        SELECT id,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY id_competicao
+                                   ORDER BY xp_obtido DESC, tarefas_concluidas DESC
+                               ) AS nova_pos
+                        FROM ranking
+                        WHERE id_competicao = %s
+                    ) sub
+                    WHERE r.id = sub.id
+                    """,
+                    (id_competicao,)
+                )
+        except Exception as e_rank:
+            print(f"Aviso: erro ao atualizar ranking (XP já salvo): {e_rank}")
 
-    # Verifica conquistas (mesmo com 0 XP, pode desbloquear algo)
+    # Verifica conquistas
     verificar_e_conceder_conquistas(cursor, id_usuario)
 
     conexao.commit()
@@ -946,10 +886,9 @@ def concluir_tarefa(id_tarefa):
     xp_total_atual = u_row[0]
     score_atual    = u_row[1]
 
-    # XP semanal atualizado
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantia_xp), 0)
+        SELECT COALESCE(SUM(quantidade_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s AND data_registro >= NOW() - INTERVAL '7 days'
         """,
@@ -966,7 +905,6 @@ def concluir_tarefa(id_tarefa):
         "xp_total":   float(xp_total_atual),
         "xp_semanal": int(xp_semanal),
         "score":      score_atual,
-        "consistente": not esta_atrasada and verificar_consistencia_simples(xp_final),
     }), 200
 
 
@@ -1035,7 +973,7 @@ def ranking():
             """
             INSERT INTO ranking
                 (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                 participacao_ativa, posicao)
+                 participacao_ativa, posicao, data_atualizacao)
             VALUES (%s, %s, 0, 0, FALSE, NULL, NOW())
             """,
             (id_usuario, id_competicao)
@@ -1244,22 +1182,6 @@ def criar_postagem():
 # =========================
 # FEED - REAGIR A POST
 # =========================
-@app.route("/feed/<int:id_post>", methods=["DELETE"])
-@jwt_required()
-def excluir_post(id_post):
-    id_usuario = int(get_jwt_identity())
-    conexao = criar_conexao()
-    cursor  = conexao.cursor()
-    cursor.execute("DELETE FROM reacoes_postagens WHERE id_post=%s", (id_post,))
-    cursor.execute("DELETE FROM postagens WHERE id=%s AND id_usuario=%s", (id_post, id_usuario))
-    deletados = cursor.rowcount
-    conexao.commit()
-    cursor.close(); conexao.close()
-    if deletados == 0:
-        return jsonify({"mensagem": "Post não encontrado"}), 404
-    return jsonify({"mensagem": "Post excluído"}), 200
-
-
 @app.route("/feed/<int:id_post>/reagir", methods=["POST"])
 @jwt_required()
 def reagir_post(id_post):
@@ -1353,21 +1275,18 @@ def listar_conquistas():
     if total == 0:
         # Cria conquistas padrão retroativamente
         conquistas_padrao = [
-            ('tarefas',     'Primeiros Passos',    'Conclua sua primeira tarefa',           1,   50,  'primeira-vitoria'),
-            ('tarefas',     'Produtivo',           'Conclua 10 tarefas',                    10,  150, 'uma-maquina'),
-            ('tarefas',     'Sem Freio',           'Conclua 50 tarefas',                    50,  500, 'sem-freio'),
-            ('tarefas',     'Centenário',          'Conclua 100 tarefas',                   100, 1000,'sem-freio'),
-            ('consistencia','Compromisso em Dia',  'Complete 3 dias sem atrasar',           3,   120, 'compromisso-em-dia'),
-            ('consistencia','Constância Inabalável','Complete 7 dias sem atrasar',          7,   200, 'constancia-inabalavel'),
-            ('consistencia','Disciplina de Ferro', 'Complete 30 dias sem atrasar',          30,  900, 'disciplina-de-ferro'),
-            ('consistencia','Compromisso Absoluto','Complete 100 dias sem atrasar',         100, 3000,'compromisso-absoluto'),
-            ('social',      'Primeiro Post',       'Publique sua primeira conquista',       1,   100, 'primeiro-post'),
-            ('social',      'Influente',           'Receba 10 corações no feed',            10,  300, 'influente'),
-            ('social',      'Inspirador(a)',       'Receba 50 corações no feed',            50,  800, 'inspirador-a'),
-            ('score',       'Confiável',           'Alcance score acima de 70%',            70,  200, 'confiavel'),
-            ('score',       'Referência',          'Alcance score acima de 85%',            85,  500, 'referencia'),
-            ('score',       'Autoridade',          'Alcance score acima de 95%',            95,  1500,'autoridade'),
-            ('ranking',     'Inaçançável',         'Fique em 1º lugar no ranking',          1,   1000,'inalcancavel'),
+            ('tarefas',     'Primeiros Passos',       'Conclua sua primeira tarefa',          1,   50,  'primeiros-passos'),
+            ('tarefas',     'Produtivo',              'Conclua 10 tarefas',                   10,  150, 'produtivo'),
+            ('tarefas',     'Máquina de Tarefas',     'Conclua 50 tarefas',                   50,  500, 'maquina-de-tarefas'),
+            ('tarefas',     'Centenário',             'Conclua 100 tarefas',                  100, 1000,'centenario'),
+            ('consistencia','7 Dias Seguidos',        'Complete tarefas por 7 dias seguidos', 7,   200, '7-dias-seguidos'),
+            ('consistencia','Mês Consistente',        'Complete tarefas por 30 dias seguidos',30,  800, 'mes-consistente'),
+            ('social',      'Primeiro Post',          'Publique sua primeira conquista',      1,   100, 'primeiro-post'),
+            ('social',      'Influencer',             'Publique 10 conquistas',               10,  300, 'influencer'),
+            ('score',       'Reputação Sólida',       'Alcance score ≥ 70',                   70,  200, 'reputacao-solida'),
+            ('score',       'Elite',                  'Alcance score ≥ 90',                   90,  500, 'elite'),
+            ('ranking',     'Top 3',                  'Fique entre os 3 primeiros do ranking',3,   300, 'top-3'),
+            ('ranking',     'Campeão',                'Fique em 1º lugar no ranking',         1,   1000,'campeao'),
         ]
         for tipo, nome_c, desc, val, xp_r, arte in conquistas_padrao:
             cursor.execute(
@@ -1593,7 +1512,7 @@ def xp_semanal():
 
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantia_xp), 0)
+        SELECT COALESCE(SUM(quantidade_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s
           AND data_registro >= NOW() - INTERVAL '7 days'
@@ -1605,42 +1524,6 @@ def xp_semanal():
     conexao.close()
 
     return jsonify({"xp_semanal": int(xp)}), 200
-
-
-
-# =========================
-# ADMIN - CORRIGIR ARTES DAS CONQUISTAS
-# =========================
-@app.route("/admin/fix-conquistas-arte", methods=["POST"])
-@jwt_required()
-def fix_conquistas_arte():
-    """Corrige o campo 'arte' das conquistas existentes no banco."""
-   mapa = {
-        'Primeira Vitória':     'primeira-vitoria',
-        'Uma Máquina':          'uma-maquina',
-        'Sem Freio':            'sem-freio',
-        'Compromisso em dia':   'compromisso-em-dia',
-        'Constância inabalável':'constancia-inabalavel',
-        'Disciplina de ferro':  'disciplina-de-ferro',
-        'Compromisso absoluto': 'compromisso-absoluto',
-        'Inalcançável':         'inalcancavel',
-        'Primeiro post':        'primeiro-post',
-        'Inspirador(a)':        'inspirador-a',
-        'Influente':            'influente',
-        'Confiável':            'confiavel',
-        'Referência':           'referencia',
-        'Autoridade':           'autoridade',
-    }
-    conexao = criar_conexao()
-    cursor  = conexao.cursor()
-    for nome, arte in mapa.items():
-        cursor.execute(
-            "UPDATE conquistas SET arte=%s WHERE nome=%s",
-            (arte, nome)
-        )
-    conexao.commit()
-    cursor.close(); conexao.close()
-    return jsonify({"mensagem": "Artes corrigidas"}), 200
 
 
 # =========================
@@ -1665,4 +1548,3 @@ def teste_db():
 # =========================
 if __name__ == "__main__":
     app.run(debug=True)
-# Wed Jun  3 03:29:25 -03 2026
