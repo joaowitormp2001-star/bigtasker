@@ -213,7 +213,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
         cursor.execute(
             """
             INSERT INTO transacoes_xp
-                (id_usuario, origem, quantidade_xp, data_registro)
+                (id_usuario, origem, quantia_xp, data_registro)
             VALUES (%s, 'conquista', %s, NOW())
             """,
             (id_usuario, xp_de_resgate)
@@ -432,7 +432,7 @@ def meu_perfil():
     # XP semanal
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantidade_xp), 0)
+        SELECT COALESCE(SUM(quantia_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s
           AND data_registro >= NOW() - INTERVAL '7 days'
@@ -793,7 +793,7 @@ def concluir_tarefa(id_tarefa):
         cursor.execute(
             """
             INSERT INTO transacoes_xp
-                (id_usuario, id_tarefa, origem, quantidade_xp, data_registro)
+                (id_usuario, id_tarefa, origem, quantia_xp, data_registro)
             VALUES (%s, %s, 'tarefa', %s, NOW())
             """,
             (id_usuario, id_tarefa, xp_final)
@@ -888,7 +888,7 @@ def concluir_tarefa(id_tarefa):
 
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantidade_xp), 0)
+        SELECT COALESCE(SUM(quantia_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s AND data_registro >= NOW() - INTERVAL '7 days'
         """,
@@ -1512,7 +1512,7 @@ def xp_semanal():
 
     cursor.execute(
         """
-        SELECT COALESCE(SUM(quantidade_xp), 0)
+        SELECT COALESCE(SUM(quantia_xp), 0)
         FROM transacoes_xp
         WHERE id_usuario = %s
           AND data_registro >= NOW() - INTERVAL '7 days'
