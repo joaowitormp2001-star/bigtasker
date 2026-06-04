@@ -371,7 +371,7 @@ def cadastro():
                 """
                 INSERT INTO ranking
                     (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                     participacao_ativa, posicao, posicao)
+                     participacao_ativa, posicao)
                 VALUES (%s, %s, 0, 0, FALSE, NULL)
                 ON CONFLICT DO NOTHING
                 """,
@@ -973,7 +973,7 @@ def ranking():
             """
             INSERT INTO ranking
                 (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                 participacao_ativa, posicao, posicao)
+                 participacao_ativa, posicao)
             VALUES (%s, %s, 0, 0, FALSE, NULL)
             """,
             (id_usuario, id_competicao)
