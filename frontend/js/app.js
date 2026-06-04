@@ -923,13 +923,28 @@ async function carregarRanking() {
   if (!ok) return;
 
   // Contador de tempo restante
-  if (data.competicao?.fim) {
-    atualizarContadorRanking(data.competicao.fim);
+  if (true) {
+    const agora = new Date();
+    const diasParaDomingo = (7 - agora.getDay()) % 7 || 7;
+    const proximoDomingo = new Date(agora);
+    proximoDomingo.setDate(agora.getDate() + diasParaDomingo);
+    proximoDomingo.setHours(23, 59, 0, 0);
+    atualizarContadorRanking(proximoDomingo.toISOString());
   }
 
   // Nome da competição
   const nomeEl = document.getElementById('ranking-nome');
   if (nomeEl && data.competicao) nomeEl.textContent = data.competicao.nome;
+
+  function calcularPremio(posicao) {
+  if (posicao === 1) return '2.000';
+  if (posicao <= 3) return '1.000';
+  if (posicao <= 10) return '500';
+  if (posicao <= 20) return '300';
+  if (posicao <= 50) return '200';
+  if (posicao <= 100) return '100';
+  return '50';
+}
 
   renderizarRanking(data.ranking || []);
 
@@ -1026,10 +1041,10 @@ function renderizarRanking(rows) {
       <span style="width:54px;font-weight:700;font-family:'Sora';">${medalha || (posicao + 'º')}</span>
       <div style="display:flex;align-items:center;gap:8px;flex:1;">
         <div style="width:26px;height:26px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${iniciais}</div>
-        <span>@${r.nome}${isYou ? ' <span style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">você</span>' : ''}</span>
+        <span style="cursor:pointer;" onclick="abrirPerfilUsuario(${r.id_usuario})">@${r.nome}${isYou ? ' <span style="background:#7c3aed;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">você</span>' : ''}</span>
       </div>
       <span style="width:90px;font-weight:600;">${r.xp_obtido} XP</span>
-      <span style="width:90px;font-weight:700;color:#22c55e;">${r.tarefas_concluidas || 0} tarefas</span>
+      <span style="width:90px;font-weight:700;color:#22c55e;">+${calcularPremio(r.posicao)} XP</span>
     </div>`;
   }).join('');
 }
