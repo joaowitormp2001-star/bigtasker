@@ -1217,7 +1217,7 @@ def reagir_post(id_post):
         """
         INSERT INTO reacoes_postagens
             (id_post, id_usuario, tipo_reacao, data_reacao)
-        VALUES (%s, %s, %s)
+        VALUES (%s, %s, %s, NOW())
         """,
         (id_post, id_usuario, tipo)
     )
@@ -1455,7 +1455,7 @@ def penalizar_usuario_alerta(id_alerta):
         """
         INSERT INTO notificacoes
             (id_usuario, tipo, titulo, mensagem, data_notificacao)
-        VALUES (%s, 'penalidade', 'Penalidade aplicada', %s)
+        VALUES (%s, 'penalidade', 'Penalidade aplicada', %s, NOW())
         """,
         (id_usuario_alvo, motivo)
     )
