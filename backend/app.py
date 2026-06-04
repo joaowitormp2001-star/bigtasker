@@ -204,7 +204,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
         """
         INSERT INTO conquistas_usuarios
             (id_usuario, id_conquista, data_desbloqueio)
-        VALUES (%s, %s, NOW())
+        VALUES (%s, %s)
         """,
         (id_usuario, id_conquista)
     )
@@ -214,7 +214,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
             """
             INSERT INTO transacoes_xp
                 (id_usuario, origem, quantia_xp, data_registro)
-            VALUES (%s, 'conquista', %s, NOW())
+            VALUES (%s, 'conquista', %s)
             """,
             (id_usuario, xp_de_resgate)
         )
@@ -236,7 +236,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
             """
             INSERT INTO notificacoes
                 (id_usuario, tipo, titulo, mensagem, tipo_relacao, id_relacao, data_notificacao)
-            VALUES (%s, 'conquista', 'Conquista desbloqueada!', %s, 'conquista', %s, NOW())
+            VALUES (%s, 'conquista', 'Conquista desbloqueada!', %s, 'conquista', %s)
             """,
             (id_usuario, f'Você desbloqueou: {nome_c[0]}', id_conquista)
         )
@@ -371,8 +371,8 @@ def cadastro():
                 """
                 INSERT INTO ranking
                     (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                     participacao_ativa, posicao, data_atualizacao)
-                VALUES (%s, %s, 0, 0, FALSE, NULL, NOW())
+                     participacao_ativa, posicao, posicao)
+                VALUES (%s, %s, 0, 0, FALSE, NULL)
                 ON CONFLICT DO NOTHING
                 """,
                 (id_novo, comp[0])
@@ -794,7 +794,7 @@ def concluir_tarefa(id_tarefa):
             """
             INSERT INTO transacoes_xp
                 (id_usuario, id_tarefa, origem, quantia_xp, data_registro)
-            VALUES (%s, %s, 'tarefa', %s, NOW())
+            VALUES (%s, %s, 'tarefa', %s)
             """,
             (id_usuario, id_tarefa, xp_final)
         )
@@ -973,8 +973,8 @@ def ranking():
             """
             INSERT INTO ranking
                 (id_usuario, id_competicao, xp_obtido, tarefas_concluidas,
-                 participacao_ativa, posicao, data_atualizacao)
-            VALUES (%s, %s, 0, 0, FALSE, NULL, NOW())
+                 participacao_ativa, posicao, posicao)
+            VALUES (%s, %s, 0, 0, FALSE, NULL)
             """,
             (id_usuario, id_competicao)
         )
@@ -1162,7 +1162,7 @@ def criar_postagem():
         """
         INSERT INTO postagens
             (id_usuario, id_tarefa, url_imagem, legenda, status, data_criacao)
-        VALUES (%s, %s, %s, %s, %s, NOW())
+        VALUES (%s, %s, %s, %s, %s)
         RETURNING id
         """,
         (id_usuario, id_tarefa, url_imagem, legenda, "publicado")
@@ -1217,7 +1217,7 @@ def reagir_post(id_post):
         """
         INSERT INTO reacoes_postagens
             (id_post, id_usuario, tipo_reacao, data_reacao)
-        VALUES (%s, %s, %s, NOW())
+        VALUES (%s, %s, %s)
         """,
         (id_post, id_usuario, tipo)
     )
@@ -1455,7 +1455,7 @@ def penalizar_usuario_alerta(id_alerta):
         """
         INSERT INTO notificacoes
             (id_usuario, tipo, titulo, mensagem, data_notificacao)
-        VALUES (%s, 'penalidade', 'Penalidade aplicada', %s, NOW())
+        VALUES (%s, 'penalidade', 'Penalidade aplicada', %s)
         """,
         (id_usuario_alvo, motivo)
     )
