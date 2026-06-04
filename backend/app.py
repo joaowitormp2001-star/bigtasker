@@ -794,7 +794,7 @@ def concluir_tarefa(id_tarefa):
             """
             INSERT INTO transacoes_xp
                 (id_usuario, id_tarefa, origem, quantia_xp, data_registro)
-            VALUES (%s, %s, 'tarefa', %s)
+            VALUES (%s, %s, 'tarefa', %s, NOW())
             """,
             (id_usuario, id_tarefa, xp_final)
         )
