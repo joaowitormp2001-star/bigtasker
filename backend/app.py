@@ -442,12 +442,18 @@ def meu_perfil():
     xp_semanal = cursor.fetchone()[0]
 
     # Posição no ranking ativo
+    # Posição no ranking ativo — calculada dinamicamente (não depende do campo posicao desatualizado)
     cursor.execute(
         """
-        SELECT r.posicao FROM ranking r
-        JOIN competicoes c ON r.id_competicao = c.id
-        WHERE r.id_usuario = %s AND c.status = 'ativa'
-        LIMIT 1
+        SELECT posicao_calc FROM (
+            SELECT
+                r.id_usuario,
+                ROW_NUMBER() OVER (ORDER BY r.xp_obtido DESC, r.tarefas_concluidas DESC) AS posicao_calc
+            FROM ranking r
+            JOIN competicoes c ON r.id_competicao = c.id
+            WHERE c.status = 'ativa'
+        ) sub
+        WHERE sub.id_usuario = %s
         """,
         (id_usuario,)
     )

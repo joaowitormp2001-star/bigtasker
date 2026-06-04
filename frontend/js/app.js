@@ -358,10 +358,8 @@ async function abrirApp(usuario) {
     carregarTarefas(),
     carregarFeed(),
     carregarConquistas(),
-    carregarRanking(),
   ]);
-
-  // Atualiza métricas do dashboard com dados frescos do servidor
+  await carregarRanking();          // garante posições calculadas antes do /me
   await atualizarMeuPerfil();
 }
 
@@ -564,7 +562,8 @@ async function concluirTarefa(id) {
     u.xp_total = data.xp_total;
     if (data.score !== undefined) u.score = data.score;
     localStorage.setItem('usuario', JSON.stringify(u));
-    await Promise.all([carregarTarefas(), atualizarMeuPerfil(), carregarRanking(), carregarConquistas()]);
+    await carregarRanking();
+    await Promise.all([carregarTarefas(), atualizarMeuPerfil(), carregarConquistas()]);
   } else {
     mostrarToast(data.mensagem || 'Erro ao concluir tarefa', true);
   }
@@ -918,6 +917,16 @@ function renderizarConquistasPerfil(conquistas) {
 // ─────────────────────────────────────────────
 // RANKING
 // ─────────────────────────────────────────────
+function calcularPremio(posicao) {
+  if (posicao === 1) return '2.000';
+  if (posicao <= 3) return '1.000';
+  if (posicao <= 10) return '500';
+  if (posicao <= 20) return '300';
+  if (posicao <= 50) return '200';
+  if (posicao <= 100) return '100';
+  return '50';
+}
+
 async function carregarRanking() {
   const { ok, data } = await apiFetch('/ranking');
   if (!ok) return;
@@ -925,7 +934,8 @@ async function carregarRanking() {
   // Contador de tempo restante
   if (true) {
     const agora = new Date();
-    const diasParaDomingo = (7 - agora.getDay()) % 7 || 7;
+    // 0=Dom, 1=Seg … 6=Sab → dias até o próximo domingo (se hoje é dom, conta este mesmo domingo)
+    const diasParaDomingo = agora.getDay() === 0 ? 0 : 7 - agora.getDay();
     const proximoDomingo = new Date(agora);
     proximoDomingo.setDate(agora.getDate() + diasParaDomingo);
     proximoDomingo.setHours(23, 59, 0, 0);
@@ -936,15 +946,6 @@ async function carregarRanking() {
   const nomeEl = document.getElementById('ranking-nome');
   if (nomeEl && data.competicao) nomeEl.textContent = data.competicao.nome;
 
-  function calcularPremio(posicao) {
-  if (posicao === 1) return '2.000';
-  if (posicao <= 3) return '1.000';
-  if (posicao <= 10) return '500';
-  if (posicao <= 20) return '300';
-  if (posicao <= 50) return '200';
-  if (posicao <= 100) return '100';
-  return '50';
-}
 
   renderizarRanking(data.ranking || []);
 
@@ -968,8 +969,7 @@ async function carregarRanking() {
         <div style="width:24px;height:24px;border-radius:100px;background:linear-gradient(135deg,#7c3aed,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">${iniciais}</div>
         <span>@${u.nome}</span>
       </div>
-      <span style="width:90px;font-weight:600;">${meuRank.xp_obtido} XP</span>
-      <span style="width:90px;font-weight:700;color:#22c55e;">${meuRank.tarefas_concluidas || 0} tarefas</span>`;
+      <span style="width:90px;font-weight:700;color:#22c55e;">+${calcularPremio(meuRank.posicao)} XP</span>`;
   } else if (perfilRow) {
     perfilRow.innerHTML = '<span style="color:#64748b;font-size:13px;padding:8px;">Participe concluindo tarefas!</span>';
   }
