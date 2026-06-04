@@ -530,7 +530,7 @@ function abrirTarefaById(t) {
     let btns = `<button onclick="excluirTarefa(${t.id})" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(239,68,68,0.4);color:#f87171;background:transparent;font-size:13px;font-weight:600;cursor:pointer;margin-right:auto;">🗑 Excluir</button>`;
     if (t.status === 'concluida') {
       btns += `<button class="btn-primary" onclick="fecharModal('modal-tarefa');abrirEditor(${t.id})">Postar</button>`;
-    } else if (!atrasada) {
+    } else if (t.status !== 'concluida') {
       btns += `<button class="btn-green" onclick="concluirTarefa(${t.id})">Concluir tarefa ✓</button>`;
     }
     acaoEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;width:100%;">${btns}</div>`;
