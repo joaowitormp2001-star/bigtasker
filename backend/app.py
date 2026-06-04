@@ -422,7 +422,7 @@ def meu_perfil():
             u.foto, u.biografia,
             u.data_criacao, u.data_ultima_atualizacao
         FROM usuarios u
-        JOIN niveis n ON u.id_nivel = n.id
+        LEFT JOIN niveis n ON u.id_nivel = n.id
         WHERE u.id = %s
         """,
         (id_usuario,)
@@ -1014,7 +1014,7 @@ def ranking():
             u.score
         FROM ranking r
         JOIN usuarios u ON r.id_usuario = u.id
-        JOIN niveis n ON u.id_nivel = n.id
+        LEFT JOIN niveis n ON u.id_nivel = n.id
         WHERE r.id_competicao = %s
         ORDER BY r.xp_obtido DESC, r.tarefas_concluidas DESC
         """,
