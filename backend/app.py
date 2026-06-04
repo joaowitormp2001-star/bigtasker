@@ -204,7 +204,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
         """
         INSERT INTO conquistas_usuarios
             (id_usuario, id_conquista, data_desbloqueio)
-        VALUES (%s, %s)
+        VALUES (%s, %s, NOW())
         """,
         (id_usuario, id_conquista)
     )
