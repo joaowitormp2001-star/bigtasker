@@ -214,7 +214,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
             """
             INSERT INTO transacoes_xp
                 (id_usuario, origem, quantia_xp, data_registro)
-            VALUES (%s, 'conquista', %s)
+            VALUES (%s, 'conquista', %s, NOW())
             """,
             (id_usuario, xp_de_resgate)
         )
