@@ -236,7 +236,7 @@ def _conceder_conquista(cursor, id_usuario, id_conquista, xp_de_resgate):
             """
             INSERT INTO notificacoes
                 (id_usuario, tipo, titulo, mensagem, tipo_relacao, id_relacao, data_notificacao)
-            VALUES (%s, 'conquista', 'Conquista desbloqueada!', %s, 'conquista', %s)
+            VALUES (%s, 'conquista', 'Conquista desbloqueada!', %s, 'conquista', %s, NOW())
             """,
             (id_usuario, f'Você desbloqueou: {nome_c[0]}', id_conquista)
         )
