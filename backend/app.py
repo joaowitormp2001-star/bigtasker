@@ -14,6 +14,76 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+def migrar_conquistas():
+    """Migra conquistas de todas as contas para a lista correta."""
+    try:
+        conexao = criar_conexao()
+        cursor = conexao.cursor()
+
+        conquistas_padrao = [
+            ('tarefas',     'Primeira Vitória',      'Concluir 1ª tarefa',               1,   30,   'primeira-vitoria'),
+            ('tarefas',     'Uma Máquina',           'Concluir 10 tarefas',              10,  250,  'uma-maquina'),
+            ('tarefas',     'Sem Freio',             'Concluir 100 tarefas',             100, 1000, 'sem-freio'),
+            ('tarefas',     'Executor Brutal',       'Concluir 500 tarefas',             500, 1500, 'executor-brutal'),
+            ('consistencia','Compromisso em dia',    '3 dias sem atrasar',               3,   120,  'compromisso-em-dia'),
+            ('consistencia','Constância inabalável', '7 dias sem atrasar',               7,   200,  'constancia-inabalavel'),
+            ('consistencia','Disciplina de ferro',   '30 dias sem atrasar',              30,  900,  'disciplina-de-ferro'),
+            ('consistencia','Compromisso absoluto',  '100 dias sem atrasar',             100, 3000, 'compromisso-absoluto'),
+            ('social',      'Primeiro post',         'Publicar no feed pela 1ª vez',     1,   100,  'primeiro-post'),
+            ('social',      'Inspirador(a)',         'Receber 10 corações',              10,  400,  'inspirador-a'),
+            ('social',      'Influente',             'Receber 100 corações',             100, 2000, 'influente'),
+            ('score',       'Confiável',             'Score acima de 70%',               70,  500,  'confiavel'),
+            ('score',       'Referência',            'Score acima de 85%',               85,  1000, 'referencia'),
+            ('score',       'Autoridade',            'Score acima de 95%',               95,  1500, 'autoridade'),
+            ('ranking',     'Os primeiros',          'Ficar entre os 10 melhores',       10,  500,  'os-primeiros'),
+            ('ranking',     'O(A) melhor',           'Ficar em 1º no ranking',           1,   2000, 'o-a-melhor'),
+            ('ranking',     'Inalcançável',          'Ficar em 1º três vezes seguidas',  3,   5000, 'inalcancavel'),
+        ]
+
+        nomes_corretos = {c[1] for c in conquistas_padrao}
+
+        # Remove conquistas antigas com nomes desatualizados para todos os usuários
+        nomes_antigos = [
+            'Primeiros Passos','Produtivo','Máquina de Tarefas','Centenário',
+            '7 Dias Seguidos','Mês Consistente','Influencer','Reputação Sólida',
+            'Elite','Top 3','Campeão'
+        ]
+        cursor.execute(
+            "DELETE FROM conquistas WHERE nome = ANY(%s)",
+            (nomes_antigos,)
+        )
+
+        # Para cada usuário, insere conquistas que faltam
+        cursor.execute("SELECT id FROM usuarios")
+        usuarios = cursor.fetchall()
+        for (uid,) in usuarios:
+            cursor.execute(
+                "SELECT nome FROM conquistas WHERE id_usuario = %s AND ativa = TRUE",
+                (uid,)
+            )
+            existentes = {row[0] for row in cursor.fetchall()}
+            for tipo, nome_c, desc, val, xp_r, arte in conquistas_padrao:
+                if nome_c not in existentes:
+                    cursor.execute(
+                        """
+                        INSERT INTO conquistas
+                            (id_usuario, tipo, nome, descricao_objetivo,
+                             valor_necessario, xp_de_resgate, arte, ativa)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE)
+                        ON CONFLICT DO NOTHING
+                        """,
+                        (uid, tipo, nome_c, desc, val, xp_r, arte)
+                    )
+
+        conexao.commit()
+        cursor.close()
+        conexao.close()
+        print("✅ Migração de conquistas concluída.")
+    except Exception as e:
+        print(f"⚠️ Erro na migração de conquistas: {e}")
+
+migrar_conquistas()
+
 app.config["JWT_SECRET_KEY"] = os.getenv("SECRET_KEY", "fallback-secret-key")
 jwt = JWTManager(app)
 
