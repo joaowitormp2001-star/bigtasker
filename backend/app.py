@@ -1271,63 +1271,141 @@ def reagir_post(id_post):
     conexao = criar_conexao()
     cursor  = conexao.cursor()
 
-    cursor.execute(
-        "DELETE FROM reacoes_postagens WHERE id_post = %s AND id_usuario = %s",
-        (id_post, id_usuario)
-    )
-
-    cursor.execute(
-        "SELECT id_usuario FROM postagens WHERE id = %s",
-        (id_post,)
-    )
+    # Verifica se o post existe
+    cursor.execute("SELECT id_usuario FROM postagens WHERE id = %s", (id_post,))
     post = cursor.fetchone()
-
     if not post:
         cursor.close()
         conexao.close()
         return jsonify({"mensagem": "Post não encontrado"}), 404
-
     id_dono = post[0]
 
+    # Verifica reação atual do usuário neste post
+    cursor.execute(
+        "SELECT tipo_reacao FROM reacoes_postagens WHERE id_post = %s AND id_usuario = %s",
+        (id_post, id_usuario)
+    )
+    reacao_atual = cursor.fetchone()
+
+    # Se clicou na mesma reação → remove (toggle off)
+    if reacao_atual and reacao_atual[0] == tipo:
+        cursor.execute(
+            "DELETE FROM reacoes_postagens WHERE id_post = %s AND id_usuario = %s",
+            (id_post, id_usuario)
+        )
+        conexao.commit()
+        # Corações restantes hoje
+        cursor.execute(
+            """
+            SELECT 5 - COUNT(*) FROM reacoes_postagens
+            WHERE id_usuario = %s AND tipo_reacao = 'coracao'
+              AND data_reacao >= CURRENT_DATE
+            """,
+            (id_usuario,)
+        )
+        coracoes_restantes = max(0, cursor.fetchone()[0])
+        cursor.close()
+        conexao.close()
+        return jsonify({"mensagem": "Reação removida", "coracoes_restantes": coracoes_restantes}), 200
+
+    # Se é coração, verifica limite de 5 por dia
+    if tipo == "coracao":
+        cursor.execute(
+            """
+            SELECT COUNT(*) FROM reacoes_postagens
+            WHERE id_usuario = %s AND tipo_reacao = 'coracao'
+              AND data_reacao >= CURRENT_DATE
+            """,
+            (id_usuario,)
+        )
+        coracoes_hoje = cursor.fetchone()[0]
+        # Desconta o coração atual se já tinha um neste post
+        if reacao_atual and reacao_atual[0] == "coracao":
+            coracoes_hoje -= 1
+        if coracoes_hoje >= 5:
+            cursor.execute(
+                "SELECT 5 - COUNT(*) FROM reacoes_postagens WHERE id_usuario = %s AND tipo_reacao = 'coracao' AND data_reacao >= CURRENT_DATE",
+                (id_usuario,)
+            )
+            cursor.close()
+            conexao.close()
+            return jsonify({"mensagem": "Limite de 5 corações por dia atingido", "coracoes_restantes": 0}), 429
+
+    # Remove reação anterior (troca) e insere nova
+    cursor.execute(
+        "DELETE FROM reacoes_postagens WHERE id_post = %s AND id_usuario = %s",
+        (id_post, id_usuario)
+    )
     cursor.execute(
         """
-        INSERT INTO reacoes_postagens
-            (id_post, id_usuario, tipo_reacao, data_reacao)
+        INSERT INTO reacoes_postagens (id_post, id_usuario, tipo_reacao, data_reacao)
         VALUES (%s, %s, %s, NOW())
         """,
         (id_post, id_usuario, tipo)
     )
 
-    delta_score = {"like": 0.2, "dislike": -0.2, "coracao": 0.5}.get(tipo, 0)
-    if delta_score != 0 and id_dono != id_usuario:
+    # Atualiza score do dono se for coração
+    if tipo == "coracao" and id_dono != id_usuario:
+        delta_score = 2
         cursor.execute(
-            """
-            UPDATE usuarios
-            SET score = GREATEST(0, LEAST(100, score + %s))
-            WHERE id = %s
-            """,
+            "UPDATE usuarios SET score = GREATEST(0, LEAST(100, score + %s)) WHERE id = %s",
             (delta_score, id_dono)
         )
-        cursor.execute(
-            """
-            INSERT INTO score_reputacao
-                (id_usuario, origem, id_origem, alteracao_score,
-                 score_anterior, novo_score, data_alteracao)
-            SELECT
-                %s, 'reacao', %s, %s,
-                score - %s, score, NOW()
-            FROM usuarios WHERE id = %s
-            """,
-            (id_dono, id_post, delta_score, delta_score, id_dono)
-        )
-        # Conquistas de score do dono
-        verificar_e_conceder_conquistas(cursor, id_dono)
 
     conexao.commit()
+
+    # Retorna corações restantes hoje
+    cursor.execute(
+        """
+        SELECT 5 - COUNT(*) FROM reacoes_postagens
+        WHERE id_usuario = %s AND tipo_reacao = 'coracao'
+          AND data_reacao >= CURRENT_DATE
+        """,
+        (id_usuario,)
+    )
+    coracoes_restantes = max(0, cursor.fetchone()[0])
+
     cursor.close()
     conexao.close()
+    return jsonify({"mensagem": "Reação registrada", "coracoes_restantes": coracoes_restantes}), 200
 
-    return jsonify({"mensagem": "Reação registrada"}), 200
+    @app.route("/feed/coracoes-restantes", methods=["GET"])
+@jwt_required()
+def coracoes_restantes():
+    id_usuario = int(get_jwt_identity())
+    conexao = criar_conexao()
+    cursor = conexao.cursor()
+    cursor.execute(
+        """
+        SELECT COUNT(*) FROM reacoes_postagens
+        WHERE id_usuario = %s AND tipo_reacao = 'coracao'
+          AND data_reacao >= CURRENT_DATE
+        """,
+        (id_usuario,)
+    )
+    usados = cursor.fetchone()[0]
+    cursor.close()
+    conexao.close()
+    return jsonify({"coracoes_restantes": max(0, 5 - usados)}), 200
+
+    @app.route("/feed/coracoes-restantes", methods=["GET"])
+@jwt_required()
+def coracoes_restantes():
+    id_usuario = int(get_jwt_identity())
+    conexao = criar_conexao()
+    cursor = conexao.cursor()
+    cursor.execute(
+        """
+        SELECT COUNT(*) FROM reacoes_postagens
+        WHERE id_usuario = %s AND tipo_reacao = 'coracao'
+          AND data_reacao >= CURRENT_DATE
+        """,
+        (id_usuario,)
+    )
+    usados = cursor.fetchone()[0]
+    cursor.close()
+    conexao.close()
+    return jsonify({"coracoes_restantes": max(0, 5 - usados)}), 200
 
 
 # =========================

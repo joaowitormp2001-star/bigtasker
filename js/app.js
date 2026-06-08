@@ -359,7 +359,7 @@ async function abrirApp(usuario) {
     carregarTarefas(),
     carregarFeed(),
     carregarConquistas(),
-    carregarRanking(),
+    carregarCoracoesRestantes(),  // ← adiciona essa linha
   ]);
 
   // Atualiza métricas do dashboard com dados frescos do servidor
@@ -728,13 +728,71 @@ function renderizarFeed(posts) {
 
 // Reação real na API
 const reacoesPendentes = {};
+let coracoesRestantes = 5;
+
+async function carregarCoracoesRestantes() {
+  const { ok, data } = await apiFetch('/feed/coracoes-restantes');
+  if (ok) {
+    coracoesRestantes = data.coracoes_restantes;
+    atualizarUICoracoes();
+  }
+}
+
+function atualizarUICoracoes() {
+  const el = document.getElementById('coracoes-saldo');
+  if (el) el.textContent = `❤️ ${coracoesRestantes}/5 hoje`;
+}
+
 async function reagirPostAPI(postId, tipo, btn) {
   if (perfilPrivado) { mostrarToast('Perfil privado: reações desabilitadas.', true); return; }
+
+  // Limite de corações
+  if (tipo === 'coracao' && coracoesRestantes <= 0) {
+    mostrarToast('Você já usou todos os 5 corações de hoje ❤️', true);
+    return;
+  }
 
   const postCard = btn.closest('.post-card');
   const allBtns = postCard?.querySelectorAll('.react-btn');
   const jaAtivo = btn.classList.contains('active');
   const span = btn.querySelector('span');
+
+  // Remove reação ativa anterior
+  if (allBtns) {
+    allBtns.forEach(b => {
+      if (b !== btn && b.classList.contains('active')) {
+        const s = b.querySelector('span');
+        if (s) s.textContent = Math.max(0, parseInt(s.textContent) - 1);
+        b.classList.remove('active');
+      }
+    });
+  }
+
+  // Toggle otimista
+  btn.classList.toggle('active');
+  if (span) span.textContent = Math.max(0, parseInt(span.textContent) + (jaAtivo ? -1 : 1));
+  if (tipo === 'coracao') {
+    coracoesRestantes = Math.max(0, coracoesRestantes + (jaAtivo ? 1 : -1));
+    atualizarUICoracoes();
+  }
+
+  const { ok, data } = await apiFetch(`/feed/${postId}/reagir`, 'POST', { tipo });
+  if (!ok) {
+    // Reverte UI se falhou
+    btn.classList.toggle('active');
+    if (span) span.textContent = Math.max(0, parseInt(span.textContent) + (jaAtivo ? 1 : -1));
+    if (tipo === 'coracao') {
+      coracoesRestantes = Math.min(5, coracoesRestantes + (jaAtivo ? -1 : 1));
+      atualizarUICoracoes();
+    }
+    mostrarToast(data.mensagem || 'Erro ao reagir', true);
+    return;
+  }
+  if (data.coracoes_restantes !== undefined) {
+    coracoesRestantes = data.coracoes_restantes;
+    atualizarUICoracoes();
+  }
+}
 
   // Remove reação ativa anterior (se diferente)
   if (allBtns) {
