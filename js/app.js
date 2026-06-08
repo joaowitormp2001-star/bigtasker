@@ -845,7 +845,7 @@ function renderizarConquistasPerfil(conquistas) {
   }
   const emojis = { tarefas:'✅', consistencia:'🔥', social:'🌟', score:'💎', ranking:'🏆' };
   container.innerHTML = desbloqueadas.map(c => {
-    const nomeImg = c.arte || nomeArquivo(c.nome);
+    const nomeImg = getArteConquista(c);
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:50px;text-align:center;">
       <img src="assets/${nomeImg}.png" alt="${c.nome}" style="width:42px;height:42px;object-fit:contain;"
            onerror="this.outerHTML='<div style=\\'width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:26px;\\'>${emojis[c.tipo]||'🎖️'}</div>'">
