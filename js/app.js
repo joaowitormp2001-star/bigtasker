@@ -803,7 +803,7 @@ function renderizarConquistas(conquistas) {
     div.className = 'conquista-card' + (c.desbloqueada ? ' unlocked' : '');
 
     // Usa campo 'arte' se disponível; senão normaliza o nome
-    const nomeImg = c.arte || nomeArquivo(c.nome);
+    const nomeImg = getArteConquista(c);
     const img = document.createElement('img');
     img.className = 'conquista-img' + (c.desbloqueada ? '' : ' locked');
     img.src = 'assets/' + nomeImg + '.png';
@@ -1366,6 +1366,51 @@ function setDif(btn, dif) {
   const u = usuarioAtual || {};
   const xpPreview = document.getElementById('nova-xp-preview');
   if (xpPreview) xpPreview.textContent = '+' + calcularXPPreview(dif, u.score || 60) + ' XP';
+}
+
+// ─────────────────────────────────────────────
+// MAPA DE ARTES DAS CONQUISTAS
+// ─────────────────────────────────────────────
+const ARTE_MAP = {
+  'primeira vitoria':      'primeira-vitoria',
+  'primeiros passos':      'primeira-vitoria',
+  'uma maquina':           'uma-maquina',
+  'produtivo':             'uma-maquina',
+  'sem freio':             'sem-freio',
+  'maquina de tarefas':    'sem-freio',
+  'executor brutal':       'executor-brutal',
+  'centenario':            'sem-freio',
+  'compromisso em dia':    'compromisso-em-dia',
+  'constancia inabalavel': 'constancia-inabalavel',
+  '7 dias seguidos':       'constancia-inabalavel',
+  'disciplina de ferro':   'disciplina-de-ferro',
+  'compromisso absoluto':  'compromisso-absoluto',
+  'mes consistente':       'compromisso-absoluto',
+  'primeiro post':         'primeiro-post',
+  'inspirador':            'inspirador-a',
+  'inspirador(a)':         'inspirador-a',
+  'influente':             'influente',
+  'influencer':            'influente',
+  'confiavel':             'confiavel',
+  'reputacao solida':      'confiavel',
+  'referencia':            'referencia',
+  'elite':                 'referencia',
+  'autoridade':            'autoridade',
+  'os primeiros':          'os-primeiros',
+  'top 3':                 'os-primeiros',
+  'o(a) melhor':           'o-a-melhor',
+  'campeao':               'o-a-melhor',
+  'inalcancavel':          'inalcancavel',
+  'inacancavel':           'inalcancavel',
+};
+
+function getArteConquista(c) {
+  const norm = (c.nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const [k, v] of Object.entries(ARTE_MAP)) {
+    const kNorm = k.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (norm === kNorm || norm.includes(kNorm) || kNorm.includes(norm)) return v;
+  }
+  return c.arte || nomeArquivo(c.nome);
 }
 
 function nomeArquivo(nome) {
