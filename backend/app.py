@@ -1398,6 +1398,16 @@ def listar_conquistas():
     cursor.close()
     conexao.close()
 
+    def arte_valida(arte):
+        if not arte:
+            return None
+        # Rejeita se contiver caracteres não-ASCII (emojis, acentos sozinhos, etc.)
+        try:
+            arte.encode('ascii')
+            return arte
+        except UnicodeEncodeError:
+            return None
+
     return jsonify([{
         "id":               c[0],
         "tipo":             c[1],
@@ -1405,7 +1415,7 @@ def listar_conquistas():
         "descricao":        c[3],
         "valor_necessario": c[4],
         "xp_de_resgate":    c[5],
-        "arte":             c[6],
+        "arte":             arte_valida(c[6]),
         "desbloqueada":     c[0] in desbloqueadas_ids,
     } for c in todas]), 200
 
