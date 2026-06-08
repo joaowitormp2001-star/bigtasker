@@ -1405,12 +1405,15 @@ const ARTE_MAP = {
 };
 
 function getArteConquista(c) {
+  // Sempre resolve pelo nome — ignora campo arte do banco (pode ter emoji ou valor desatualizado)
   const norm = (c.nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   for (const [k, v] of Object.entries(ARTE_MAP)) {
     const kNorm = k.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     if (norm === kNorm || norm.includes(kNorm) || kNorm.includes(norm)) return v;
   }
-  return c.arte || nomeArquivo(c.nome);
+  // Fallback: só usa arte do banco se parecer um nome de arquivo (tem hífen ou letras, sem emoji)
+  if (c.arte && /^[a-z0-9-]+$/.test(c.arte)) return c.arte;
+  return nomeArquivo(c.nome);
 }
 
 function nomeArquivo(nome) {
